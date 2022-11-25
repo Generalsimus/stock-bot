@@ -7,8 +7,13 @@ import (
 	"github.com/alpacahq/alpaca-trade-api-go/v2/marketdata"
 )
 
-func GetMarketData(symbol string, timeFrame marketdata.TimeFrame, startDate time.Time) []marketdata.Bar {
-	client := GetMarketDataClient()
+type MarketData struct {
+	client  marketdata.Client
+	options marketdata.ClientOpts
+}
+
+func (m MarketData) GetMarketData(symbol string, timeFrame marketdata.TimeFrame, startDate time.Time) []marketdata.Bar {
+	client := m.client
 	// sss, ret := client.GetLatestBars([]string{"TWTR"})
 	// fmt.Println(sss)
 	// fmt.Println("LLL", ret)

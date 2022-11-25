@@ -9,12 +9,12 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-type MarketPosition struct {
-	afterPositionId int64
-	open            float32
-	close           float32
-	gorm.Model
-}
+// type MarketPosition struct {
+// 	afterPositionId int64
+// 	open            float32
+// 	close           float32
+// 	gorm.Model
+// }
 
 var Database *gorm.DB
 
@@ -32,7 +32,8 @@ func Init() {
 	db.Logger = logger.Default.LogMode(logger.Info)
 	log.Println("Running Migrations")
 
-	db.AutoMigrate(&MarketPosition{})
+	// db.AutoMigrate(&MarketPosition{})
+	db.AutoMigrate(&Order{})
 	Database = db
 
 }

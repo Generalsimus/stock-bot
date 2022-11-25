@@ -7,7 +7,7 @@ require (
 	github.com/alpacahq/alpaca-trade-api-go/v2 v2.8.0
 	github.com/piquette/finance-go v1.0.0
 	gorm.io/driver/sqlite v1.4.3
-	gorm.io/gorm v1.24.0
+	gorm.io/gorm v1.24.2
 )
 
 require (
