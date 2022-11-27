@@ -1,59 +1,36 @@
 package algo
 
 import (
-	"fmt"
 	"math"
+	"neural/market"
 	"neural/utils"
 
 	"github.com/alpacahq/alpaca-trade-api-go/v2/alpaca"
 )
 
-type AlpacaPosition struct {
-	Side       alpaca.Side
-	StopLost   float64
-	TakeProfit float64
-}
-
-func FindAlpacaRelativeOpenPosition(intervalBars TimeIntervalsBars) {
+func FindAlpacaRelativeOpenPosition(intervalBars TimeIntervalsBars) market.AlpacaPosition {
 	intervalSimilarity := intervalBars.intervalSimilarity
-	maxDiffPosition := FindAverageDiffMaxPosition(intervalSimilarity)
-	fmt.Println("maxDiffPosition", maxDiffPosition)
-	// var finalMaxNum float64 = math.Inf(-1)
-	// var finalMinNum float64 = math.Inf(1)
-	// intervalSimilarity := intervalBars.intervalSimilarity
-	// currentPrice, _ := intervalSimilarity[0].bars[0].Close.Float64()
-	// diffDetails := FindSimilarityIntervalMaxAndMinDifferentials(intervalSimilarity)
+	UpAverageMaxDiffSum, DownAverageMaxDiffSum := FindAverageDiffMaxPosition(intervalSimilarity)
+	currentPrice, _ := intervalSimilarity[0].bars[0].Close.Float64()
+	side := alpaca.Buy
+	var takeProfit float64 = 0
+	var stopLost float64 = 0
+	if UpAverageMaxDiffSum > DownAverageMaxDiffSum {
+		side = alpaca.Buy
+		takeProfit = currentPrice + (currentPrice * (UpAverageMaxDiffSum / 1))
+		stopLost = currentPrice - (currentPrice * (DownAverageMaxDiffSum / 1))
+	} else {
+		side = alpaca.Sell
+		takeProfit = currentPrice - (currentPrice * (DownAverageMaxDiffSum / 1))
+		stopLost = currentPrice + (currentPrice * (UpAverageMaxDiffSum / 1))
+	}
 
-	// diffPosition := FindRelativePosition(diffDetails)
-	// position := AlpacaPosition{}
-	// if diffPosition.Side == alpaca.Buy {
-	// 	position = AlpacaPosition{
-	// 		Side:       diffPosition.Side,
-	// 		TakeProfit: (currentPrice + currentPrice*(diffPosition.TakeProfit/1)),
-	// 		StopLost:   (currentPrice - currentPrice*(diffPosition.StopLost/1)),
-	// 	}
-	// } else {
-	// 	position = AlpacaPosition{
-	// 		Side:       diffPosition.Side,
-	// 		TakeProfit: (currentPrice - currentPrice*(diffPosition.TakeProfit/1)),
-	// 		StopLost:   (currentPrice + currentPrice*(diffPosition.StopLost/1)),
-	// 	}
-	// }
-	// diff := diffDetails.Diffs
-	// if diff.UpMaxDiffNum > diff.DowMaxDiffNum {
-	// 	return AlpacaPosition{
-	// 		TakeProfit: (currentPrice + currentPrice*(diffDetails.UpMaxAverageDiffNum/1)),
-	// 		StopLost:   (currentPrice - currentPrice*(diff.DowMaxDiffNum/1)),
-	// 	}
-	// } else {
-	// 	return AlpacaPosition{
-	// 		TakeProfit: (currentPrice - currentPrice*(diffDetails.DowMaxAverageDiffNum/1)),
-	// 		StopLost:   (currentPrice + currentPrice*(diff.UpMaxDiffNum/1)),
-	// 	}
-	// }
-	// fmt.Println(diff)
-	// fmt.Printf("POSITON: %+v\n", position)
-	// return position
+	position := market.AlpacaPosition{
+		Side:       side,
+		TakeProfit: takeProfit,
+		StopLost:   stopLost,
+	}
+	return position
 }
 
 type UpDownDiffType struct {
@@ -66,41 +43,55 @@ type MaxUpDownDiffs struct {
 	DowMaxDiff *UpDownDiffType
 }
 
-func FindAverageDiffMaxPosition(interval []*BarsInterval) *UpDownDiffType {
-	var maxDiff *UpDownDiffType
+func FindAverageDiffMaxPosition(interval []*BarsInterval) (float64, float64) {
+	var UpMaxDiffSum float64 = 0
+	var DownMaxDiffSum float64 = 0
 	for _, barInterval := range interval {
 		upMaxDiffArray, dowMaxDiffArray := DiffToArray(barInterval)
-		upMaxDiff := FindMaxDiff(upMaxDiffArray)
-		downMaxDiff := FindMaxDiff(dowMaxDiffArray)
-
-		if upMaxDiff.DiffNum > downMaxDiff.DiffNum && upMaxDiff.DiffNum > maxDiff.DiffNum {
-			maxDiff = upMaxDiff
-		} else if downMaxDiff.DiffNum > upMaxDiff.DiffNum && downMaxDiff.DiffNum > maxDiff.DiffNum {
-			maxDiff = downMaxDiff
-		}
+		// upMaxDiff := FindMaxDiff(upMaxDiffArray)
+		// downMaxDiff := FindMaxDiff(dowMaxDiffArray)
+		// UpMaxDiffSum = UpMaxDiffSum + upMaxDiff.DiffNum
+		// DownMaxDiffSum = DownMaxDiffSum + downMaxDiff.DiffNum
+		//////////////////////////////////////////////////////
+		UpMaxDiffSum = UpMaxDiffSum + FindAverageDiff(upMaxDiffArray)
+		DownMaxDiffSum = DownMaxDiffSum + FindAverageDiff(dowMaxDiffArray)
 	}
+	UpAverageMaxDiffSum := UpMaxDiffSum / float64(len(interval))
+	DownAverageMaxDiffSum := DownMaxDiffSum / float64(len(interval))
 
-	return maxDiff
+	return UpAverageMaxDiffSum, DownAverageMaxDiffSum
 }
-func FindMaxDiff(diffs []*UpDownDiffType) *UpDownDiffType {
-	maxDiff := diffs[0]
+func FindAverageDiff(diffs []UpDownDiffType) float64 {
+	var averageDiff float64 = 0
+	if len(diffs) == 0 {
+		return averageDiff
+	}
 	for _, diff := range diffs {
-		if diff.DiffNum > maxDiff.DiffNum {
-			maxDiff = diff
-		}
+		averageDiff = averageDiff + diff.DiffNum
 	}
-	return maxDiff
+	return averageDiff / float64(len(diffs))
 }
-func DiffToArray(barsInterval *BarsInterval) ([]*UpDownDiffType, []*UpDownDiffType) {
-	upMaxDiffArray := []*UpDownDiffType{}
-	dowMaxDiffArray := []*UpDownDiffType{}
+
+//	func FindMaxDiff(diffs []UpDownDiffType) UpDownDiffType {
+//		var maxDiff UpDownDiffType
+//		for _, diff := range diffs {
+//			if diff.DiffNum > maxDiff.DiffNum {
+//				maxDiff = diff
+//			}
+//		}
+//		return maxDiff
+//	}
+func DiffToArray(barsInterval *BarsInterval) ([]UpDownDiffType, []UpDownDiffType) {
+	upMaxDiffArray := []UpDownDiffType{}
+	dowMaxDiffArray := []UpDownDiffType{}
 	EachDiffs(barsInterval, func(diff *UpDownDiffType) {
 		if diff.Side == alpaca.Buy {
-			upMaxDiffArray = append(upMaxDiffArray, diff)
+			upMaxDiffArray = append(upMaxDiffArray, *diff)
 		} else {
-			dowMaxDiffArray = append(dowMaxDiffArray, diff)
+			dowMaxDiffArray = append(dowMaxDiffArray, *diff)
 		}
 	})
+	// fmt.Println("REF_1: ", len(upMaxDiffArray), "REF_2: ", len(dowMaxDiffArray))
 	return upMaxDiffArray, dowMaxDiffArray
 }
 

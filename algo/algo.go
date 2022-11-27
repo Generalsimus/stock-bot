@@ -1,7 +1,6 @@
 package algo
 
 import (
-	"fmt"
 	"math"
 	"neural/utils"
 	"sort"
@@ -144,7 +143,7 @@ func ConvertToDrawWindow(timeIntervalBar TimeIntervalsBars, viewCandles int) [][
 	for _, intervalTopBars := range timeIntervalBar.intervalSimilarity {
 		drawNumberCol := []float64{}
 		bars := intervalTopBars.bars
-		fmt.Println("TIME_EEEEE:1 ", time.Unix(int64(bars[0].Timestamp), 0))
+		// fmt.Println("TIME_EEEEE:1 ", time.Unix(int64(bars[0].Timestamp), 0))
 		// start := intervalTopBars.startIndex
 		// end := int(math.Min(float64(len(intervalTopBars.barsList)-1), float64(intervalTopBars.endIndex+viewCandles)))
 		// bars = intervalTopBars.barsList[start:end]
@@ -152,7 +151,7 @@ func ConvertToDrawWindow(timeIntervalBar TimeIntervalsBars, viewCandles int) [][
 		startIndex := int(math.Max(0, float64(intervalTopBars.startIndex-viewCandles)))
 		endIndex := intervalTopBars.endIndex
 		bars = intervalTopBars.barsList[startIndex:endIndex]
-		fmt.Println("TIME_EEEEE:2 ", time.Unix(int64(bars[0].Timestamp), 0), len(bars))
+		// fmt.Println("TIME_EEEEE:2 ", time.Unix(int64(bars[0].Timestamp), 0), len(bars))
 		for _, bar := range bars {
 
 			drawNumberCol = append(drawNumberCol, getBarValue(bar))

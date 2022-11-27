@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"neural/algo"
 	"neural/draw"
+	"neural/market"
 	"neural/options"
 
 	"github.com/joho/godotenv"
@@ -18,17 +19,19 @@ func main() {
 	fmt.Println("outputTT")
 
 	// market.InitAndGetAlpacaClient()
-	// marketObj := market.NewMarket()
+	marketObj := market.NewMarket()
 
 	SymbolsSimilarity := algo.GetSymbolsSimilarity()
 	// openPos :=
-	algo.FindAlpacaRelativeOpenPosition(SymbolsSimilarity[0].BestIntervals[0])
+	position := algo.FindAlpacaRelativeOpenPosition(SymbolsSimilarity[0].Interval)
 
 	/////////////////////////////////////////
+	symbol := SymbolsSimilarity[0].Symbol
+	marketObj.CheckOrder(symbol)
 	// fmt.Printf("%+v\n", openPos)
 	// symbol := SymbolsSimilarity[0].Symbol
-	// marketObj.OrderMarket(symbol, openPos.StopLost, openPos.TakeProfit)
+	marketObj.OrderMarket(symbol, position)
 	//////////////////////////////////
-	drawValue := algo.ConvertToDrawWindow(SymbolsSimilarity[0].BestIntervals[0], options.ViewCandles)
+	drawValue := algo.ConvertToDrawWindow(SymbolsSimilarity[0].Interval, options.ViewCandles)
 	draw.DrawOnNewWindow(drawValue, options.ViewCandles)
 }

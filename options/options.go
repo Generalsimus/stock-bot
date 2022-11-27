@@ -14,8 +14,10 @@ var (
 	// ვიზუალიზაცისას დამატებით რამდენი ბარი აჩვენოს ფანჯარაში
 	ViewCandles int = 30
 	// შესამოწმებელი სიმბოლოები
-	CheckSymbols = []string{"ABT"}
-	// CheckSymbols = []string{"ABT", "TM", "TXN", "TXN", "AXP", "TD"}
+	// CheckSymbols = []string{"ABT"}
+	CheckSymbols = []string{"ABT", "TM", "TXN", "TXN", "AXP", "TD"}
+	// ბარებს დაყოფს საათებად
+	BarsCutHours = []int{1, 2, 3, 4, 5}
 	// ფინანსური სანთლების დროის ინტერვალი
 	FinanceInterval = datetime.OneDay
 	// ფინანსური სანთლების წამოღების საწყისი წერტილი

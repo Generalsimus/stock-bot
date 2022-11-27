@@ -8,8 +8,8 @@ import (
 )
 
 type SymbolBestTimeIntervalsBars struct {
-	Symbol        string
-	BestIntervals []TimeIntervalsBars
+	Symbol   string
+	Interval TimeIntervalsBars
 }
 
 func GetSymbolsSimilarity() []*SymbolBestTimeIntervalsBars {
@@ -23,32 +23,30 @@ func GetSymbolsSimilarity() []*SymbolBestTimeIntervalsBars {
 			options.ViewCandles,
 			output,
 		)
-		symbolBestTimeIntervals = append(symbolBestTimeIntervals, &SymbolBestTimeIntervalsBars{
-			Symbol:        symbol,
-			BestIntervals: intervals,
-		})
+		for _, interval := range intervals {
+			symbolBestTimeIntervals = append(symbolBestTimeIntervals, &SymbolBestTimeIntervalsBars{
+				Symbol:   symbol,
+				Interval: interval,
+			})
+		}
 	}
 
-	sortedBestSymbols := FindBestSymbolInterval(symbolBestTimeIntervals)
+	sortedBestSymbols := SortBestSymbolInterval(symbolBestTimeIntervals)
 	fmt.Println("BEST_INTERVAL_SYMBOL: ", sortedBestSymbols[0].Symbol)
 	// sss := sortedBestSymbols[0].bestIntervals[0]
 	return sortedBestSymbols
 }
-func SumBestSymbolIntervalSimilarityNum(bestIntervals []TimeIntervalsBars) float64 {
-	var value float64 = 0
-	for _, interval := range bestIntervals {
-
-		value = value + (SumDistanceSimilarityNum(interval.intervalSimilarity) / float64(len(interval.intervalSimilarity)))
-	}
-	return value / float64(len(bestIntervals))
+func GetSymbolIntervalSimilarityNum(interval TimeIntervalsBars) float64 {
+	return (SumDistanceSimilarityNum(interval.intervalSimilarity) / float64(len(interval.intervalSimilarity)))
 }
-func FindBestSymbolInterval(symbolBestTimeIntervals []*SymbolBestTimeIntervalsBars) []*SymbolBestTimeIntervalsBars {
+
+func SortBestSymbolInterval(symbolBestTimeIntervals []*SymbolBestTimeIntervalsBars) []*SymbolBestTimeIntervalsBars {
 
 	sort.Slice(symbolBestTimeIntervals, func(index1, index2 int) bool {
 		symbolInterval1 := symbolBestTimeIntervals[index1]
 		symbolInterval2 := symbolBestTimeIntervals[index2]
 
-		return SumBestSymbolIntervalSimilarityNum(symbolInterval1.BestIntervals) < SumBestSymbolIntervalSimilarityNum(symbolInterval2.BestIntervals)
+		return GetSymbolIntervalSimilarityNum(symbolInterval1.Interval) < GetSymbolIntervalSimilarityNum(symbolInterval2.Interval)
 	})
 
 	return symbolBestTimeIntervals
