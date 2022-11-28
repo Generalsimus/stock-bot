@@ -12,6 +12,7 @@ type Order struct {
 	gorm.Model
 }
 type Bar struct {
+	Symbol string
 	financeGo.ChartBar
 	gorm.Model
 }

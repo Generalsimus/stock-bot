@@ -25,7 +25,6 @@ func Init() {
 	db.Logger = logger.Default.LogMode(logger.Info)
 	log.Println("Running Migrations")
 
-	// db.AutoMigrate(&MarketPosition{})
 	db.AutoMigrate(&Order{})
 	db.AutoMigrate(&Bar{})
 	Database = db
