@@ -17,8 +17,9 @@ func main() {
 	}
 	fmt.Println("outputTT")
 	db.Init()
-	timeNow := time.Now()
-	market.GetMarketDataDb("TD", 2, time.Date(timeNow.Year(), timeNow.Month(), timeNow.Day()-3, 1, 1, 1, 1, time.UTC))
+	// timeNow := time.Now()
+	// market.GetMarketDataDb("TD", 2, time.Date(timeNow.Year(), timeNow.Month(), timeNow.Day()-3, 1, 1, 1, 1, time.UTC))
+	market.GetBars("TD", []float64{0.5}, time.Date(2021, 1, 1, 1, 1, 1, 1, time.UTC))
 
 	/*
 		// market.InitAndGetAlpacaClient()

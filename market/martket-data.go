@@ -3,6 +3,7 @@ package market
 import (
 	"fmt"
 	"neural/db"
+	"neural/finance"
 	"sort"
 	"time"
 
@@ -43,87 +44,110 @@ func (m MarketData) GetMarketData(symbol string, timeFrame marketdata.TimeFrame,
 	return bars
 }
 
-// func DbBarsToCharBars(symbol string, hourFrame int, startDate time.Time) {
-
-// }
-
-func GetMarketDataDb(symbol string, hourFrame float64, startDate time.Time) []financeGo.ChartBar {
-	var Bars []db.Bar
-	db.Database.Where("symbol = ?", symbol).Find(&Bars)
-	fmt.Println("BARS ,", Bars)
-
-	charBars := DbBarsToCharBars(Bars, hourFrame, startDate)
-	return charBars
-}
-func GetBarsAndSave(symbol string, startTimeStamp float64, endTimeStamp float64) {
-	cutTimeStamp := float64(250 * 60)
-	for timeStamp := startTimeStamp; timeStamp < endTimeStamp; timeStamp += cutTimeStamp {
-		startTimeDate := time.Unix(startTime, 0)
-		endTimeDate := time.Unix(endTime, 0)
-		params := &chart.Params{
-			Symbol:   symbol,
-			Start:    datetime.New(&startTime),
-			End:      datetime.New(&endTime),
-			Interval: interval,
-		}
-		iter := chart.Get(params)
-	}
-	startTime := time.Unix(int64(startTimeStamp), 0)
-	endTime := time.Unix(int64(endTimeStamp), 0)
-	params := &chart.Params{
-		Symbol:   symbol,
-		Start:    datetime.New(&startTime),
-		End:      datetime.New(&endTime),
-		Interval: interval,
-	}
-	iter := chart.Get(params)
-	// financeBars := finance.GetSymbolIntervalBars(symbol, datetime.OneMin, datetime.Datetime{Month: int(startDate.Month()), Day: startDate.Day(), Year: startDate.Year()})
-
-}
-func GetMinTimeInterval() {
-}
-
-func DbBarsToCharBars(bars []db.Bar, hourFrame float64, startDate time.Time) []financeGo.ChartBar {
+func DbBarsToCharBars(bars []db.Bar) []financeGo.ChartBar {
 	sort.Slice(bars, func(index1, index2 int) bool {
 		return bars[index1].Timestamp < bars[index2].Timestamp
 	})
-	// for {
-	// financeBars := finance.GetSymbolIntervalBars(symbol, datetime.OneMin, datetime.Datetime{Month: int(startDate.Month()), Day: startDate.Day(), Year: startDate.Year()})
-	hourTimestamp := float64(3600)
-	frameToTimestamp := hourFrame * hourTimestamp
-	endTimestamp := float64(time.Now().Unix())
-	timestampIntervals := float64(60)
-	if frameToTimestamp < timestampIntervals {
-		panic("Time Frame Is Low")
-	}
-	fmt.Println("STARTTTT")
-	barIndex := 0
-	eachTimestamp := float64(startDate.Unix())
-	for eachTimestamp < endTimestamp {
-		bar := bars[barIndex]
-		baTimestamp := float64(bar.Timestamp)
-		if eachTimestamp < baTimestamp {
 
-		}
-		barIndex++
-		eachTimestamp += frameToTimestamp
-	}
-	// for _, bar := range financeBars {
-	// 	dbBar := db.Bar{
-	// 		Symbol: symbol,
-	// 	}
-	// 	dbBar.Open = bar.Open
-	// 	dbBar.Low = bar.Low
-	// 	dbBar.High = bar.High
-	// 	dbBar.Close = bar.Close
-	// 	dbBar.AdjClose = bar.AdjClose
-	// 	dbBar.Volume = bar.Volume
-	// 	dbBar.Timestamp = bar.Timestamp
-
-	// 	db.Database.Create(&dbBar)
-	// }
-
-	// }
 	charBars := []financeGo.ChartBar{}
+	for _, charBar := range bars {
+		charBars = append(charBars, financeGo.ChartBar{
+			Open:      charBar.Open,
+			Low:       charBar.Low,
+			High:      charBar.High,
+			Close:     charBar.Close,
+			AdjClose:  charBar.AdjClose,
+			Volume:    charBar.Volume,
+			Timestamp: charBar.Timestamp,
+		})
+	}
 	return charBars
+}
+
+func GetMarketDataDb(symbol string, startDate time.Time) []financeGo.ChartBar {
+	var Bars []db.Bar
+	db.Database.Where("symbol = ?", symbol).Where("timestamp >= ?", startDate.Unix()).Find(&Bars)
+	fmt.Println("BARS ,", Bars)
+
+	// charBars :=
+	return DbBarsToCharBars(Bars)
+}
+func SaveBarsOnDb(symbol string, financeBars []*financeGo.ChartBar) {
+	for _, bar := range financeBars {
+		dbBar := db.Bar{
+			Symbol: symbol,
+		}
+		dbBar.Open = bar.Open
+		dbBar.Low = bar.Low
+		dbBar.High = bar.High
+		dbBar.Close = bar.Close
+		dbBar.AdjClose = bar.AdjClose
+		dbBar.Volume = bar.Volume
+		dbBar.Timestamp = bar.Timestamp
+
+		db.Database.Create(&dbBar)
+	}
+}
+func GetBarsAndSave(symbol string, startTimeStamp float64, endTimeStamp float64) []*financeGo.ChartBar {
+	cutTimeStamp := float64(250 * 60)
+	bars := []*financeGo.ChartBar{}
+	for timeStamp := startTimeStamp; timeStamp < endTimeStamp; timeStamp += cutTimeStamp {
+		startTimeDate := time.Unix(int64(timeStamp), 0)
+		endTimeDate := time.Unix(int64(timeStamp+cutTimeStamp), 0)
+		params := &chart.Params{
+			Symbol:   symbol,
+			Start:    datetime.New(&startTimeDate),
+			End:      datetime.New(&endTimeDate),
+			Interval: datetime.OneMin,
+		}
+		iter := chart.Get(params)
+		bars = append(bars, finance.FinanceIterToArray(iter)...)
+
+	}
+	SaveBarsOnDb(symbol, bars)
+	return bars
+}
+func GetAndFillEmptyIntervals(symbol string, frameHour float64, startDate time.Time) []financeGo.ChartBar {
+	bars := GetMarketDataDb(symbol, startDate)
+	resultBars := []financeGo.ChartBar{}
+	startTimeStamp := float64(startDate.Unix())
+	endTimeStamp := float64(time.Now().Unix())
+	index := 0
+	count := len(bars)
+	frameInTimeStamp := frameHour * float64(60)
+	frameIndex := 0
+	for {
+		bar := bars[index]
+		plusInterval := float64(frameIndex) * frameInTimeStamp
+		startIndexTimeStamp := startTimeStamp + plusInterval
+		endIndexTimeStamp := startTimeStamp + plusInterval + frameInTimeStamp
+		barTimestamp := float64(bar.Timestamp)
+		if barTimestamp > startIndexTimeStamp && barTimestamp < endIndexTimeStamp {
+			resultBars = append(resultBars, bar)
+			frameIndex++
+		}
+
+		index++
+		if index >= count {
+			if endIndexTimeStamp < endTimeStamp {
+				GetBarsAndSave(symbol, startIndexTimeStamp, endTimeStamp)
+				return GetAndFillEmptyIntervals(symbol, frameHour, startDate)
+			}
+			break
+		}
+	}
+	return resultBars
+}
+func GetBars(symbol string, frameHour []float64, startDate time.Time) {
+	for _, frame := range frameHour {
+		bars := GetAndFillEmptyIntervals(symbol, frame, startDate)
+		for index, bar := range bars {
+			if index == 0 {
+				continue
+			}
+			bar2 := bars[index-1]
+			fmt.Println("DIFF: ", bar.Timestamp-bar2.Timestamp)
+		}
+	}
+
 }
