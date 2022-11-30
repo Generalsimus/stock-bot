@@ -46,6 +46,7 @@ require (
 	github.com/stretchr/testify v1.7.2 // indirect
 	github.com/tevino/abool v1.2.0 // indirect
 	github.com/yuin/goldmark v1.4.13 // indirect
+	golang.org/x/exp v0.0.0-20221126150942-6ab00d035af9 // indirect
 	golang.org/x/exp/shiny v0.0.0-20221028150844-83b7d23a625f // indirect
 	golang.org/x/image v0.1.0 // indirect
 	golang.org/x/mobile v0.0.0-20211207041440-4e6c2922fdee // indirect

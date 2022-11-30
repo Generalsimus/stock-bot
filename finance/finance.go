@@ -25,3 +25,19 @@ func GetStockData(symbol string, interval datetime.Interval, startDate datetime.
 	}
 	return iter
 }
+
+func GetStockDataWithSymbolInterval(symbol string, interval datetime.Interval) *chart.Iter {
+	timeNow := time.Now()
+	fmt.Println(datetime.New(&timeNow))
+	params := &chart.Params{
+		Symbol:   symbol,
+		Interval: interval,
+		Start:    &datetime.Datetime{Month: 0, Day: 0, Year: 1999},
+		End:      datetime.New(&timeNow),
+	}
+	iter := chart.Get(params)
+	if err := iter.Err(); err != nil {
+		fmt.Println(err)
+	}
+	return iter
+}

@@ -6,7 +6,6 @@ import (
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 var Database *gorm.DB
@@ -22,7 +21,7 @@ func Init() {
 	}
 
 	log.Println("Connected Successfully to Database")
-	db.Logger = logger.Default.LogMode(logger.Info)
+	// db.Logger = logger.Default.LogMode(logger.Info)
 	log.Println("Running Migrations")
 
 	db.AutoMigrate(&Order{})

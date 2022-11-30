@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"neural/db"
-	"neural/market"
-	"time"
+	"neural/finance"
+	"neural/options"
 
 	"github.com/joho/godotenv"
 )
@@ -17,9 +17,16 @@ func main() {
 	}
 	fmt.Println("outputTT")
 	db.Init()
+	for _, symbol := range options.CheckSymbols {
+		for _, interval := range options.FinanceIntervals {
+			bars := finance.GetStockDataWithSymbolIntervalBars(symbol, interval)
+			fmt.Println("BARS: ", len(bars))
+		}
+	}
+
 	// timeNow := time.Now()
 	// market.GetMarketDataDb("TD", 2, time.Date(timeNow.Year(), timeNow.Month(), timeNow.Day()-3, 1, 1, 1, 1, time.UTC))
-	market.GetBars("TD", []float64{0.5}, time.Date(2021, 1, 1, 1, 1, 1, 1, time.UTC))
+	// market.GetBars("TD", []float64{0.5}, time.Date(2021, 1, 1, 1, 1, 1, 1, time.UTC))
 
 	/*
 		// market.InitAndGetAlpacaClient()
