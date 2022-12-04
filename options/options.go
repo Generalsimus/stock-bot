@@ -19,7 +19,7 @@ var (
 	// ფინანსური სანთლების დროის ინტერვალი
 	FinanceInterval = datetime.OneDay
 	// ფინანსური სანთლების დროის ინტერვალი
-	FinanceIntervals = []datetime.Interval{datetime.OneMin}
+	FinanceIntervals = []datetime.Interval{datetime.OneDay}
 	// ფინანსური სანთლების წამოღების საწყისი წერტილი
 	FinanceStartDate = datetime.Datetime{Month: 1, Day: 1, Year: 2020}
 )

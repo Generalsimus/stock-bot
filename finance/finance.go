@@ -27,6 +27,7 @@ func GetStockData(symbol string, interval datetime.Interval, startDate datetime.
 }
 
 func GetStockDataWithSymbolInterval(symbol string, interval datetime.Interval) *chart.Iter {
+
 	timeNow := time.Now()
 	fmt.Println(datetime.New(&timeNow))
 	params := &chart.Params{

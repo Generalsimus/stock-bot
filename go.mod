@@ -37,14 +37,17 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/joho/godotenv v1.4.0 // indirect
 	github.com/jsummers/gobmp v0.0.0-20151104160322-e2ba15ffa76e // indirect
+	github.com/markcheno/go-quote v0.0.0-20220624214117-555891babbf1 // indirect
 	github.com/mattn/go-sqlite3 v1.14.15 // indirect
 	github.com/maxence-charriere/go-app/v9 v9.6.7 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/polygon-io/client-go v1.4.0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/srwiley/oksvg v0.0.0-20200311192757-870daf9aa564 // indirect
 	github.com/srwiley/rasterx v0.0.0-20200120212402-85cb7272f5e9 // indirect
-	github.com/stretchr/testify v1.7.2 // indirect
+	github.com/stretchr/testify v1.8.0 // indirect
 	github.com/tevino/abool v1.2.0 // indirect
+	github.com/tiloso/googlefinance v0.0.0-20141127135705-d7d9f52bc381 // indirect
 	github.com/yuin/goldmark v1.4.13 // indirect
 	golang.org/x/exp v0.0.0-20221126150942-6ab00d035af9 // indirect
 	golang.org/x/exp/shiny v0.0.0-20221028150844-83b7d23a625f // indirect

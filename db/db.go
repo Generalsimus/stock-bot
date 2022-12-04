@@ -8,9 +8,9 @@ import (
 	"gorm.io/gorm"
 )
 
-var Database *gorm.DB
+// var Database *gorm.DB
 
-func Init() {
+func GetDb() *gorm.DB {
 	log.Println("Connecting Database...")
 
 	db, err := gorm.Open(sqlite.Open("marketDB.db"), &gorm.Config{})
@@ -26,6 +26,5 @@ func Init() {
 
 	db.AutoMigrate(&Order{})
 	db.AutoMigrate(&Bar{})
-	Database = db
-
+	return db
 }
