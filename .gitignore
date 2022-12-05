@@ -1,3 +1,4 @@
 .env
 .env.example
-/tmp
+./tmp
+./market/curl-market.go

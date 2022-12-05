@@ -20,7 +20,8 @@ func main() {
 	fmt.Println(marketData)
 	// hourFrame float64, symbol string, startTime time.Time, endTime time.Time
 	endTime := time.Now()
-	startTime := time.Unix(endTime.Unix()-(60*60*24*5), 0)
+	dayInTs := int64(60 * 60 * 24)
+	startTime := time.Unix(endTime.Unix()-(dayInTs*3), 0).Round(time.Minute)
 
 	fmt.Println("GET BARS: \n", startTime, "\n", endTime)
 
