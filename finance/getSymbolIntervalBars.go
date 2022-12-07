@@ -5,7 +5,7 @@ import (
 	"time"
 
 	financeGo "github.com/piquette/finance-go"
-	"github.com/piquette/finance-go/chart"
+	"github.com/piquette/finance-go/chart" 
 	"github.com/piquette/finance-go/datetime"
 )
 

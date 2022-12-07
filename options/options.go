@@ -14,7 +14,7 @@ var (
 	// ვიზუალიზაცისას დამატებით რამდენი ბარი აჩვენოს ფანჯარაში
 	ViewCandles int = 30
 	// შესამოწმებელი სიმბოლოები
-	CheckSymbols = []string{"ABT"}
+	CheckSymbols = []string{"GOOGL"}
 	// CheckSymbols = []string{"ABT", "TM", "TXN", "TXN", "AXP", "TD"}
 	// ფინანსური სანთლების დროის ინტერვალი
 	FinanceInterval = datetime.OneDay

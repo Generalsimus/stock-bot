@@ -12,6 +12,7 @@ type Order struct {
 }
 type Bar struct {
 	Symbol          string
+	Frame           string
 	Timestamp       int64
 	Open            float64
 	Close           float64

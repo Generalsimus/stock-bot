@@ -21,7 +21,7 @@ func main() {
 	// hourFrame float64, symbol string, startTime time.Time, endTime time.Time
 	endTime := time.Now()
 	dayInTs := int64(60 * 60 * 24)
-	startTime := time.Unix(endTime.Unix()-(dayInTs*3), 0).Round(time.Minute)
+	startTime := time.Unix(endTime.Unix()-(dayInTs*5), 0).Round(time.Minute)
 
 	fmt.Println("GET BARS: \n", startTime, "\n", endTime)
 

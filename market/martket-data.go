@@ -9,6 +9,9 @@ import (
 	"time"
 
 	"github.com/alpacahq/alpaca-trade-api-go/v2/marketdata"
+	financeGo "github.com/piquette/finance-go"
+	"github.com/piquette/finance-go/chart"
+	"github.com/piquette/finance-go/datetime"
 	"golang.org/x/exp/slices"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -20,6 +23,26 @@ type MarketData struct {
 	db      *gorm.DB
 }
 
+func (m MarketData) GetYahooFinanceData(symbol string, startTime time.Time, endTime time.Time) []db.Bar {
+	params := &chart.Params{
+		Symbol:   symbol,
+		Interval: datetime.OneMin,
+		Start:    datetime.New(&startTime),
+		End:      datetime.New(&endTime),
+	}
+	iter := chart.Get(params)
+	if err := iter.Err(); err != nil {
+		fmt.Println(err)
+	}
+	var bars []db.Bar
+	for iter.Next() {
+		Bar := iter.Bar()
+		bars = append(bars, m.YahooBarToDbBar(symbol, *Bar))
+	}
+	dbBars := m.OptimizeBars(bars)
+	m.SaveBarsOnDb(dbBars)
+	return dbBars
+}
 func (m MarketData) GetMarketData(symbol string, startTime time.Time, endTime time.Time) []db.Bar {
 	fmt.Println("REQUEST ALPACA BARS: \n", startTime, "\n", endTime)
 	timeNow := time.Now()
@@ -30,44 +53,25 @@ func (m MarketData) GetMarketData(symbol string, startTime time.Time, endTime ti
 		Start:      startTime,
 		End:        time.Unix(minEnd, 0),
 		Adjustment: marketdata.Split,
-		// PageLimit:  1000,
-		// AsOf:      "2022-06-10", // Leaving it empty yields the same results
+		TotalLimit: 5000,
+		// AsOf:       "2022-06-10", // Leaving it empty yields the same results
 	})
 	if err != nil {
 		panic(err)
 	}
-	for index, _ := range quotes {
-		if (index + 1) == len(quotes) {
-			break
-		}
-		bar1 := quotes[index]
-		bar2 := quotes[index+1]
-		diff := bar2.Timestamp.Unix() - bar1.Timestamp.Unix()
-		if (diff) != 60 {
-			fmt.Println(
-				"\nDIFF:",
-				diff,
-				"\nDIFF MINUT:",
-				diff/60,
-				"\nBAR 1 TIME:",
-				bar1.Timestamp,
-				"\nBAR 2 TIME:",
-				bar2.Timestamp,
-			)
-			panic("NOT RELEVANT BAR")
-		}
 
-	}
-	dbBars2 := m.AlpacaBarsToDbBars(symbol, quotes)
-	dbBars := m.OptimizeBars(dbBars2)
-
-	m.db.Clauses(clause.OnConflict{
-		Columns: []clause.Column{{Name: "timestamp"}},
-		// DoUpdates: clause.AssignmentColumns([]string{"name", "age"}),
-	}).Create(&dbBars)
-	fmt.Println("DB BARS: ", len(dbBars2))
-	// panic("SS")
+	dbBars := m.OptimizeBars(m.AlpacaBarsToDbBars(symbol, quotes))
+	m.SaveBarsOnDb(dbBars)
 	return dbBars
+}
+func (m MarketData) SaveBarsOnDb(bars []db.Bar) []db.Bar {
+	if len(bars) != 0 {
+		m.db.Clauses(clause.OnConflict{
+			Columns: []clause.Column{{Name: "timestamp"}},
+			// DoUpdates: clause.AssignmentColumns([]string{"name", "age"}),
+		}).Create(&bars)
+	}
+	return bars
 }
 func (m MarketData) AlpacaBarToDbBar(symbol string, bar marketdata.Bar) db.Bar {
 	barToJson, _ := json.MarshalIndent(bar, "", "  ")
@@ -90,7 +94,24 @@ func (m MarketData) AlpacaBarsToDbBars(symbol string, bars []marketdata.Bar) []d
 	}
 	return dbBars
 }
-
+func (m MarketData) YahooBarToDbBar(symbol string, bar financeGo.ChartBar) db.Bar {
+	barToJson, _ := json.MarshalIndent(bar, "", "  ")
+	barStructToJson := string(barToJson)
+	open, _ := bar.Open.Float64()
+	close, _ := bar.Close.Float64()
+	high, _ := bar.High.Float64()
+	low, _ := bar.Low.Float64()
+	dbBar := db.Bar{
+		Symbol:          symbol,
+		Timestamp:       int64(bar.Timestamp),
+		Open:            open,
+		Close:           close,
+		High:            high,
+		Low:             low,
+		BarStructToJson: barStructToJson,
+	}
+	return dbBar
+}
 func (m MarketData) GetMarketDataFromDb(symbol string, startTime time.Time) []db.Bar {
 	var Bars []db.Bar
 	m.db.Where("symbol = ?", symbol).Where("timestamp >= ?", startTime.Unix()-2000).Find(&Bars)
@@ -118,28 +139,29 @@ func (m MarketData) OptimizeBars(bars []db.Bar) []db.Bar {
 }
 
 func (m MarketData) FillMarketBars(bars []db.Bar, symbol string, startTime time.Time, endTime time.Time) []db.Bar {
-	fmt.Println("FILLABLE_BAR: ", len(bars))
+	var newBars []db.Bar
 	if len(bars) == 0 {
 		m.GetMarketData(symbol, startTime, endTime)
-		return m.GetMarketCachedData(symbol, startTime, endTime)
+		newBars =
+			m.GetMarketCachedData(symbol, startTime, endTime)
 	}
-	var newBars []db.Bar
-	barsCunt := len(bars)
-	for index, _ := range bars {
-		if (index + 1) == barsCunt {
-			break
-		}
-		bar1 := bars[index]
-		bar2 := bars[index+1]
-		timeStampDiff := float64(bar2.Timestamp - bar1.Timestamp)
-		if timeStampDiff != 60 {
-			startTimeBar := time.Unix(bar1.Timestamp-int64(timeStampDiff), 0)
-			endTimeBar := time.Unix(bar2.Timestamp+int64(timeStampDiff), 0)
 
-			m.GetMarketData(symbol, startTimeBar, endTimeBar)
-			return m.GetMarketCachedData(symbol, startTime, endTime)
-		}
-	}
+	// barsCunt := len(bars)
+	// for index, _ := range bars {
+	// 	if (index + 1) == barsCunt {
+	// 		break
+	// 	}
+	// 	bar1 := bars[index]
+	// 	bar2 := bars[index+1]
+	// 	timeStampDiff := float64(bar2.Timestamp - bar1.Timestamp)
+	// 	if timeStampDiff != 60 {
+	// 		startTimeBar := time.Unix(bar1.Timestamp-int64(timeStampDiff), 0)
+	// 		endTimeBar := time.Unix(bar2.Timestamp+int64(timeStampDiff), 0)
+
+	// 		m.GetMarketData(symbol, startTimeBar, endTimeBar)
+	// 		return m.GetMarketCachedData(symbol, startTime, endTime)
+	// 	}
+	// }
 	return m.OptimizeBars(newBars)
 }
 func (m MarketData) GetMarketCachedData(symbol string, startTime time.Time, endTime time.Time) []db.Bar {
@@ -151,6 +173,8 @@ func (m MarketData) GetMarketCachedData(symbol string, startTime time.Time, endT
 }
 func (m MarketData) GetMarketCachedDataWithFrame(hourFrame float64, symbol string, startTime time.Time, endTime time.Time) []db.Bar {
 	var newBars []db.Bar
+	// GetMarketData()
+	// return newBars
 	bars := m.GetMarketCachedData(symbol, startTime, endTime)
 	frameTimeStampInHour := int64(float64(60*60) * hourFrame)
 	for timeStamp := startTime.Unix(); timeStamp < endTime.Unix(); timeStamp += frameTimeStampInHour {
