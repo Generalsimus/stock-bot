@@ -11,7 +11,7 @@ import (
 func FindAlpacaRelativeOpenPosition(intervalBars TimeIntervalsBars) market.AlpacaPosition {
 	intervalSimilarity := intervalBars.intervalSimilarity
 	UpAverageMaxDiffSum, DownAverageMaxDiffSum := FindAverageDiffMaxPosition(intervalSimilarity)
-	currentPrice, _ := intervalSimilarity[0].bars[0].Close.Float64()
+	currentPrice := intervalSimilarity[0].bars[0].Close
 	side := alpaca.Buy
 	var takeProfit float64 = 0
 	var stopLost float64 = 0

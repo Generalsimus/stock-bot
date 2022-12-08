@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+	"neural/algo"
+	"neural/draw"
 	"neural/market"
-	"neural/utils"
-	"time"
+	"neural/options"
 
 	"github.com/joho/godotenv"
 )
@@ -19,14 +20,25 @@ func main() {
 	marketData := market.NewMarketData()
 	fmt.Println(marketData)
 	// hourFrame float64, symbol string, startTime time.Time, endTime time.Time
-	endTime := time.Now()
-	dayInTs := int64(60 * 60 * 24)
-	startTime := time.Unix(endTime.Unix()-(dayInTs*5), 0).Round(time.Minute)
 
-	fmt.Println("GET BARS: \n", startTime, "\n", endTime)
+	// option.MaxGetBarsStartTime
+	SymbolsSimilarity := algo.GetSymbolsSimilarity()
+	fmt.Println("BEST Len", len(SymbolsSimilarity))
+	fmt.Println("BEST Symbol", SymbolsSimilarity[0].Symbol)
+	drawValue := algo.ConvertToDrawWindow(SymbolsSimilarity[0].Interval, options.ViewCandles)
+	draw.DrawOnNewWindow(drawValue, options.ViewCandles)
+	// for index, _ := range bars {
+	// 	if index == 0 {
+	// 		continue
+	// 	}
+	// 	bar1 := bars[index-1]
+	// 	bar2 := bars[index]
+	// 	fmt.Println("CUT BARS DIFF: \n", bar2.Timestamp-bar1.Timestamp)
+	// }
+	// utils.LogStruct("RESULT: ", len(bars))
+	// lc, _ := time.LoadLocation("Asia/Tbilisi")
 
-	bars := marketData.GetMarketCachedDataWithFrame(float64(1), "TD", startTime, endTime)
-	utils.LogStruct("RESULT: ", len(bars))
+	// utils.LogStruct("LAST BAR TIME: ", time.Unix(bars[len(bars)-1].Timestamp, 0).In(lc))
 	// for _, bar := range bars {
 
 	// 	utils.LogStruct("RESULT: ", bar, time.Unix(bar.Timestamp, 0))

@@ -13,7 +13,7 @@ type Order struct {
 type Bar struct {
 	Symbol          string
 	Frame           string
-	Timestamp       int64
+	Timestamp       int64 `gorm:"unique"`
 	Open            float64
 	Close           float64
 	High            float64

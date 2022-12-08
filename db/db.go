@@ -6,6 +6,7 @@ import (
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // var Database *gorm.DB
@@ -13,7 +14,10 @@ import (
 func GetDb() *gorm.DB {
 	log.Println("Connecting Database...")
 
-	db, err := gorm.Open(sqlite.Open("marketDB.db"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open("marketDB.db"), &gorm.Config{
+		// Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 
 	if err != nil {
 		log.Fatal("Failed to connect to the database! \n", err)
@@ -21,7 +25,6 @@ func GetDb() *gorm.DB {
 	}
 
 	log.Println("Connected Successfully to Database")
-	// db.Logger = logger.Default.LogMode(logger.Info)
 	log.Println("Running Migrations")
 
 	db.AutoMigrate(&Order{})

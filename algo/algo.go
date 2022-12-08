@@ -2,29 +2,33 @@ package algo
 
 import (
 	"math"
+	"neural/db"
 	"neural/utils"
 	"sort"
 	"time"
-
-	financeGo "github.com/piquette/finance-go"
 )
 
 type BarsInterval struct {
 	startIndex    int
 	endIndex      int
 	similarityNum float64
-	bars          []*financeGo.ChartBar
-	barsList      []*financeGo.ChartBar
+	bars          []db.Bar
+	barsList      []db.Bar
 }
 type TimeIntervalsBars struct {
 	interval           int
 	intervalSimilarity []*BarsInterval
 }
 
-func CalcManyIntervals(bestCandles int, startIntervalCount int, endIntervalCount int, viewCandles int, barsList []*financeGo.ChartBar) []TimeIntervalsBars {
+func CalcManyIntervals(bestCandles int, startIntervalCount int, endIntervalCount int, viewCandles int, barsList []db.Bar) []TimeIntervalsBars {
 	barsList = SortBarsWithTimestamp(barsList)
 	timeIntervalTopBarsList := []TimeIntervalsBars{}
+	// min, max := utils.FindMinAndMax([]int{endIntervalCount - startIntervalCount, len(barsList) - 1})
+	barsCount := len(barsList)
 	for interval := startIntervalCount; interval <= endIntervalCount; interval++ {
+		if interval > (barsCount - 1) {
+			continue
+		}
 		slicedBars := SliceBars(barsList, interval)
 		intervalSimilarity := intervalSimilarity(interval, slicedBars)
 
@@ -47,21 +51,21 @@ func SortWithDistanceSum(timeBarsIntervals []TimeIntervalsBars) []TimeIntervalsB
 	})
 	return timeBarsIntervals
 }
-func getBarValue(bar *financeGo.ChartBar) float64 {
-	BarOpenPrice, _ := bar.Open.Float64()
-	barClosePrice, _ := bar.Close.Float64()
-	barHighPrice, _ := bar.High.Float64()
-	barLowPrice, _ := bar.Low.Float64()
+func getBarValue(bar db.Bar) float64 {
+	BarOpenPrice := bar.Open
+	barClosePrice := bar.Close
+	barHighPrice := bar.High
+	barLowPrice := bar.Low
 	return (BarOpenPrice + barClosePrice + barHighPrice + barLowPrice) / 4
 }
-func MapToBarsValues(bars []*financeGo.ChartBar) []float64 {
+func MapToBarsValues(bars []db.Bar) []float64 {
 	values := []float64{}
 	for _, bar := range bars {
 		values = append(values, getBarValue(bar))
 	}
 	return values
 }
-func BarsToOneNumber(bars []*financeGo.ChartBar) []float64 {
+func BarsToOneNumber(bars []db.Bar) []float64 {
 	barsToValue := MapToBarsValues(bars)
 	values := []float64{}
 	_, max := utils.FindMinAndMax(barsToValue)
@@ -72,7 +76,7 @@ func BarsToOneNumber(bars []*financeGo.ChartBar) []float64 {
 	}
 	return values
 }
-func CalculateSimilarityBars(primelyBars []*financeGo.ChartBar, secondaryBars []*financeGo.ChartBar) float64 {
+func CalculateSimilarityBars(primelyBars []db.Bar, secondaryBars []db.Bar) float64 {
 	var sumInterval float64 = 0
 	primelyOneNumBars := BarsToOneNumber(primelyBars)
 	secondaryOneNumBars := BarsToOneNumber(secondaryBars)
@@ -115,7 +119,7 @@ labelFor:
 	}
 	return closestBarsIntervals
 }
-func SliceBars(bars []*financeGo.ChartBar, interval int) []*BarsInterval {
+func SliceBars(bars []db.Bar, interval int) []*BarsInterval {
 	barsList := []*BarsInterval{}
 	barsCount := len(bars)
 	// checkInterval := slicedBars[0]
@@ -193,14 +197,14 @@ func ConvertToDrawWindow(timeIntervalBar TimeIntervalsBars, viewCandles int) [][
 // 	return value
 // }
 
-func getBarTampsList(bars []*financeGo.ChartBar) []int {
-	timestampsList := []int{}
+func getBarTampsList(bars []db.Bar) []int64 {
+	timestampsList := []int64{}
 	for _, bar := range bars {
 		timestampsList = append(timestampsList, bar.Timestamp)
 	}
 	return timestampsList
 }
-func isBarInIntervalBarsTime(checkIntervalCandles []*financeGo.ChartBar, insideIntervalCandles []*financeGo.ChartBar) bool {
+func isBarInIntervalBarsTime(checkIntervalCandles []db.Bar, insideIntervalCandles []db.Bar) bool {
 
 	timestampsList := getBarTampsList(insideIntervalCandles)
 	startTimestamp, endTimestamp := utils.FindMinAndMax(timestampsList)
@@ -218,7 +222,7 @@ func isBarInIntervalBarsTime(checkIntervalCandles []*financeGo.ChartBar, insideI
 	return checkTimeStart.Equal(startTime) || (checkTimeStart.After(startTime) && checkTimeStart.Before(endTime)) || (checkTimeEnd.After(startTime) && checkTimeEnd.Before(endTime))
 }
 
-func SortBarsWithTimestamp(bars []*financeGo.ChartBar) []*financeGo.ChartBar {
+func SortBarsWithTimestamp(bars []db.Bar) []db.Bar {
 	sort.Slice(bars, func(index1, index2 int) bool {
 		element1 := bars[index1]
 		element2 := bars[index2]
@@ -256,7 +260,7 @@ func SortBarsWithTimestamp(bars []*financeGo.ChartBar) []*financeGo.ChartBar {
 
 // 			if isBarInIntervalBarsTime(addedBars.bars, algoBar.bars) {
 // 				continue labelFor
-// 				break
+// 				breakCalcManyIntervals(
 // 			}
 // 		}
 

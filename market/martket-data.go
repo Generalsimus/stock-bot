@@ -3,6 +3,7 @@ package market
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"neural/db"
 	"neural/utils"
 	"sort"
@@ -24,6 +25,7 @@ type MarketData struct {
 }
 
 func (m MarketData) GetYahooFinanceData(symbol string, startTime time.Time, endTime time.Time) []db.Bar {
+	log.Println("GetYahooFinanceData")
 	params := &chart.Params{
 		Symbol:   symbol,
 		Interval: datetime.OneMin,
@@ -43,7 +45,8 @@ func (m MarketData) GetYahooFinanceData(symbol string, startTime time.Time, endT
 	m.SaveBarsOnDb(dbBars)
 	return dbBars
 }
-func (m MarketData) GetMarketData(symbol string, startTime time.Time, endTime time.Time) []db.Bar {
+func (m MarketData) GetAlpacaMarketData(symbol string, startTime time.Time, endTime time.Time) []db.Bar {
+	log.Println("GetAlpacaMarketData")
 	fmt.Println("REQUEST ALPACA BARS: \n", startTime, "\n", endTime)
 	timeNow := time.Now()
 	minute15 := int64(60 * 60 * 15)
@@ -65,15 +68,19 @@ func (m MarketData) GetMarketData(symbol string, startTime time.Time, endTime ti
 	return dbBars
 }
 func (m MarketData) SaveBarsOnDb(bars []db.Bar) []db.Bar {
+	log.Println("SaveBarsOnDb", len(bars))
 	if len(bars) != 0 {
 		m.db.Clauses(clause.OnConflict{
-			Columns: []clause.Column{{Name: "timestamp"}},
+			UpdateAll: true,
+			// DoUpdates: clause.AssignmentColumns([]string{}),
 			// DoUpdates: clause.AssignmentColumns([]string{"name", "age"}),
 		}).Create(&bars)
 	}
+
 	return bars
 }
 func (m MarketData) AlpacaBarToDbBar(symbol string, bar marketdata.Bar) db.Bar {
+	// log.Println("AlpacaBarToDbBar")
 	barToJson, _ := json.MarshalIndent(bar, "", "  ")
 	barStructToJson := string(barToJson)
 	dbBar := db.Bar{
@@ -88,6 +95,7 @@ func (m MarketData) AlpacaBarToDbBar(symbol string, bar marketdata.Bar) db.Bar {
 	return dbBar
 }
 func (m MarketData) AlpacaBarsToDbBars(symbol string, bars []marketdata.Bar) []db.Bar {
+	log.Println("AlpacaBarsToDbBars")
 	var dbBars []db.Bar
 	for _, bar := range bars {
 		dbBars = append(dbBars, m.AlpacaBarToDbBar(symbol, bar))
@@ -95,6 +103,7 @@ func (m MarketData) AlpacaBarsToDbBars(symbol string, bars []marketdata.Bar) []d
 	return dbBars
 }
 func (m MarketData) YahooBarToDbBar(symbol string, bar financeGo.ChartBar) db.Bar {
+	// log.Println("YahooBarToDbBar")
 	barToJson, _ := json.MarshalIndent(bar, "", "  ")
 	barStructToJson := string(barToJson)
 	open, _ := bar.Open.Float64()
@@ -113,6 +122,7 @@ func (m MarketData) YahooBarToDbBar(symbol string, bar financeGo.ChartBar) db.Ba
 	return dbBar
 }
 func (m MarketData) GetMarketDataFromDb(symbol string, startTime time.Time) []db.Bar {
+	log.Println("GetMarketDataFromDb")
 	var Bars []db.Bar
 	m.db.Where("symbol = ?", symbol).Where("timestamp >= ?", startTime.Unix()-2000).Find(&Bars)
 	fmt.Println("DB BARS: ", len(Bars))
@@ -120,6 +130,7 @@ func (m MarketData) GetMarketDataFromDb(symbol string, startTime time.Time) []db
 }
 
 func (m MarketData) OptimizeBars(bars []db.Bar) []db.Bar {
+	log.Println("OptimizeBars")
 	var newBars []db.Bar
 
 	for _, bar := range bars {
@@ -139,44 +150,44 @@ func (m MarketData) OptimizeBars(bars []db.Bar) []db.Bar {
 }
 
 func (m MarketData) FillMarketBars(bars []db.Bar, symbol string, startTime time.Time, endTime time.Time) []db.Bar {
-	var newBars []db.Bar
+	log.Println("FillMarketBars", len(bars))
 	if len(bars) == 0 {
-		m.GetMarketData(symbol, startTime, endTime)
-		newBars =
-			m.GetMarketCachedData(symbol, startTime, endTime)
+		bars = append(
+			bars,
+			m.GetAlpacaMarketData(symbol, startTime, endTime)...,
+		)
 	}
 
-	// barsCunt := len(bars)
-	// for index, _ := range bars {
-	// 	if (index + 1) == barsCunt {
-	// 		break
-	// 	}
-	// 	bar1 := bars[index]
-	// 	bar2 := bars[index+1]
-	// 	timeStampDiff := float64(bar2.Timestamp - bar1.Timestamp)
-	// 	if timeStampDiff != 60 {
-	// 		startTimeBar := time.Unix(bar1.Timestamp-int64(timeStampDiff), 0)
-	// 		endTimeBar := time.Unix(bar2.Timestamp+int64(timeStampDiff), 0)
+	lastBar := bars[0]
 
-	// 		m.GetMarketData(symbol, startTimeBar, endTimeBar)
-	// 		return m.GetMarketCachedData(symbol, startTime, endTime)
-	// 	}
-	// }
-	return m.OptimizeBars(newBars)
+	bars = append(
+		bars,
+		m.GetYahooFinanceData(symbol,
+			time.Unix(lastBar.Timestamp-1000, 0),
+			endTime,
+		)...,
+	)
+
+	return m.OptimizeBars(bars)
 }
 func (m MarketData) GetMarketCachedData(symbol string, startTime time.Time, endTime time.Time) []db.Bar {
+	log.Println("GetMarketCachedData")
 	barsFromDb := m.OptimizeBars(m.GetMarketDataFromDb(symbol, startTime))
 
 	filedBars := m.FillMarketBars(barsFromDb, symbol, startTime, endTime)
 
 	return filedBars
 }
-func (m MarketData) GetMarketCachedDataWithFrame(hourFrame float64, symbol string, startTime time.Time, endTime time.Time) []db.Bar {
+func (m MarketData) CutBarsWithHourFrame(bars []db.Bar, hourFrame float64) []db.Bar {
+	log.Println("CutBarsWithHourFrame")
 	var newBars []db.Bar
-	// GetMarketData()
-	// return newBars
-	bars := m.GetMarketCachedData(symbol, startTime, endTime)
+	if len(bars) == 0 {
+		log.Println("bARS FOR CUT FRAME NOT FOUND")
+	}
 	frameTimeStampInHour := int64(float64(60*60) * hourFrame)
+	startTime := time.Unix(bars[0].Timestamp, 0)
+	endTime := time.Unix(bars[len(bars)-1].Timestamp, 0)
+
 	for timeStamp := startTime.Unix(); timeStamp < endTime.Unix(); timeStamp += frameTimeStampInHour {
 		var closestBar db.Bar
 		for index, bar := range bars {
@@ -186,7 +197,17 @@ func (m MarketData) GetMarketCachedDataWithFrame(hourFrame float64, symbol strin
 				closestBar = bar
 			}
 		}
-		newBars = append(newBars, closestBar)
+
+		if len(newBars) == 0 || newBars[len(newBars)-1] != closestBar {
+			newBars = append(newBars, closestBar)
+		}
 	}
 	return newBars
+}
+func (m MarketData) GetMarketCachedDataWithFrame(hourFrame float64, symbol string, startTime time.Time, endTime time.Time) []db.Bar {
+	log.Println("GetMarketCachedDataWithFrame")
+
+	bars := m.GetMarketCachedData(symbol, startTime, endTime)
+	frameBars := m.CutBarsWithHourFrame(bars, hourFrame)
+	return frameBars
 }
