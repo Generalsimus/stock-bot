@@ -38,6 +38,7 @@ func NewMarket() Market {
 }
 func NewMarketData() MarketData {
 	dbConnect := db.GetDb()
+
 	options := marketdata.ClientOpts{
 		// Alternatively you can set your key and secret using the
 		// APCA_API_KEY_ID and APCA_API_SECRET_KEY environment variables

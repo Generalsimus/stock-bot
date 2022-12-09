@@ -20,7 +20,7 @@ func GetSymbolsSimilarity() []*SymbolBestTimeIntervalsBars {
 	/////////////////////
 	endTime := time.Now()
 	dayInTs := int64(60 * 60 * 24)
-	startTime := time.Unix(endTime.Unix()-(dayInTs*5), 0).Round(time.Minute)
+	startTime := time.Unix(endTime.Unix()-(dayInTs*60), 0).Round(time.Minute)
 	fmt.Println("GET BARS: \n", startTime, "\n", endTime)
 	/////////
 	for _, symbol := range options.CheckSymbols {
@@ -45,7 +45,7 @@ func GetSymbolsSimilarity() []*SymbolBestTimeIntervalsBars {
 	}
 
 	sortedBestSymbols := SortBestSymbolInterval(symbolBestTimeIntervals)
-	fmt.Println("BEST_INTERVAL_SYMBOL: ", sortedBestSymbols[0].Symbol)
+	// fmt.Println("BEST_INTERVAL_SYMBOL: ", sortedBestSymbols[0].Symbol)
 	// sss := sortedBestSymbols[0].bestIntervals[0]
 	return sortedBestSymbols
 }

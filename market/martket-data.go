@@ -3,7 +3,6 @@ package market
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"neural/db"
 	"neural/utils"
 	"sort"
@@ -25,7 +24,7 @@ type MarketData struct {
 }
 
 func (m MarketData) GetYahooFinanceData(symbol string, startTime time.Time, endTime time.Time) []db.Bar {
-	log.Println("GetYahooFinanceData")
+	fmt.Println("GetYahooFinanceData")
 	params := &chart.Params{
 		Symbol:   symbol,
 		Interval: datetime.OneMin,
@@ -38,51 +37,53 @@ func (m MarketData) GetYahooFinanceData(symbol string, startTime time.Time, endT
 	}
 	var bars []db.Bar
 	for iter.Next() {
-		Bar := iter.Bar()
-		bars = append(bars, m.YahooBarToDbBar(symbol, *Bar))
+		bar := iter.Bar()
+		bars = append(bars, m.YahooBarToDbBar(symbol, *bar))
 	}
 	dbBars := m.OptimizeBars(bars)
 	m.SaveBarsOnDb(dbBars)
 	return dbBars
 }
 func (m MarketData) GetAlpacaMarketData(symbol string, startTime time.Time, endTime time.Time) []db.Bar {
-	log.Println("GetAlpacaMarketData")
+	fmt.Println("GetAlpacaMarketData")
 	fmt.Println("REQUEST ALPACA BARS: \n", startTime, "\n", endTime)
 	timeNow := time.Now()
-	minute15 := int64(60 * 60 * 15)
+	minute15 := int64(60 * 16)
 	minEnd, _ := utils.FindMinAndMax([]int64{timeNow.Unix() - minute15, endTime.Unix()})
 	quotes, err := m.client.GetBars(symbol, marketdata.GetBarsParams{
 		TimeFrame:  marketdata.OneMin,
 		Start:      startTime,
 		End:        time.Unix(minEnd, 0),
 		Adjustment: marketdata.Split,
-		TotalLimit: 5000,
+		// TotalLimit: 5000,
 		// AsOf:       "2022-06-10", // Leaving it empty yields the same results
 	})
 	if err != nil {
 		panic(err)
 	}
-
-	dbBars := m.OptimizeBars(m.AlpacaBarsToDbBars(symbol, quotes))
-	m.SaveBarsOnDb(dbBars)
-	return dbBars
+	fmt.Println("GET ALPACA BARS: ", len(quotes))
+	dbBars := m.AlpacaBarsToDbBars(symbol, quotes)
+	optiBars := m.OptimizeBars(dbBars)
+	m.SaveBarsOnDb(optiBars)
+	return optiBars
 }
 func (m MarketData) SaveBarsOnDb(bars []db.Bar) []db.Bar {
-	log.Println("SaveBarsOnDb", len(bars))
+	fmt.Println("SaveBarsOnDb", len(bars))
 	if len(bars) != 0 {
-		m.db.Clauses(clause.OnConflict{
-			UpdateAll: true,
-			// DoUpdates: clause.AssignmentColumns([]string{}),
-			// DoUpdates: clause.AssignmentColumns([]string{"name", "age"}),
-		}).Create(&bars)
+		for _, bar := range bars {
+			m.db.Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "timestamp"}},
+				UpdateAll: true,
+			}).Create(&bar)
+		}
 	}
 
 	return bars
 }
 func (m MarketData) AlpacaBarToDbBar(symbol string, bar marketdata.Bar) db.Bar {
-	// log.Println("AlpacaBarToDbBar")
-	barToJson, _ := json.MarshalIndent(bar, "", "  ")
-	barStructToJson := string(barToJson)
+	// fmt.Println("AlpacaBarToDbBar")
+	// barToJson, _ := json.MarshalIndent(bar, "", "  ")
+	barStructToJson := ""
 	dbBar := db.Bar{
 		Symbol:          symbol,
 		Timestamp:       bar.Timestamp.Unix(),
@@ -95,7 +96,7 @@ func (m MarketData) AlpacaBarToDbBar(symbol string, bar marketdata.Bar) db.Bar {
 	return dbBar
 }
 func (m MarketData) AlpacaBarsToDbBars(symbol string, bars []marketdata.Bar) []db.Bar {
-	log.Println("AlpacaBarsToDbBars")
+	fmt.Println("AlpacaBarsToDbBars")
 	var dbBars []db.Bar
 	for _, bar := range bars {
 		dbBars = append(dbBars, m.AlpacaBarToDbBar(symbol, bar))
@@ -103,7 +104,7 @@ func (m MarketData) AlpacaBarsToDbBars(symbol string, bars []marketdata.Bar) []d
 	return dbBars
 }
 func (m MarketData) YahooBarToDbBar(symbol string, bar financeGo.ChartBar) db.Bar {
-	// log.Println("YahooBarToDbBar")
+	// fmt.Println("YahooBarToDbBar")
 	barToJson, _ := json.MarshalIndent(bar, "", "  ")
 	barStructToJson := string(barToJson)
 	open, _ := bar.Open.Float64()
@@ -122,7 +123,7 @@ func (m MarketData) YahooBarToDbBar(symbol string, bar financeGo.ChartBar) db.Ba
 	return dbBar
 }
 func (m MarketData) GetMarketDataFromDb(symbol string, startTime time.Time) []db.Bar {
-	log.Println("GetMarketDataFromDb")
+	fmt.Println("GetMarketDataFromDb")
 	var Bars []db.Bar
 	m.db.Where("symbol = ?", symbol).Where("timestamp >= ?", startTime.Unix()-2000).Find(&Bars)
 	fmt.Println("DB BARS: ", len(Bars))
@@ -130,7 +131,7 @@ func (m MarketData) GetMarketDataFromDb(symbol string, startTime time.Time) []db
 }
 
 func (m MarketData) OptimizeBars(bars []db.Bar) []db.Bar {
-	log.Println("OptimizeBars")
+	fmt.Println("OptimizeBars")
 	var newBars []db.Bar
 
 	for _, bar := range bars {
@@ -150,7 +151,7 @@ func (m MarketData) OptimizeBars(bars []db.Bar) []db.Bar {
 }
 
 func (m MarketData) FillMarketBars(bars []db.Bar, symbol string, startTime time.Time, endTime time.Time) []db.Bar {
-	log.Println("FillMarketBars", len(bars))
+	fmt.Println("FillMarketBars", len(bars))
 	if len(bars) == 0 {
 		bars = append(
 			bars,
@@ -171,7 +172,7 @@ func (m MarketData) FillMarketBars(bars []db.Bar, symbol string, startTime time.
 	return m.OptimizeBars(bars)
 }
 func (m MarketData) GetMarketCachedData(symbol string, startTime time.Time, endTime time.Time) []db.Bar {
-	log.Println("GetMarketCachedData")
+	fmt.Println("GetMarketCachedData")
 	barsFromDb := m.OptimizeBars(m.GetMarketDataFromDb(symbol, startTime))
 
 	filedBars := m.FillMarketBars(barsFromDb, symbol, startTime, endTime)
@@ -179,10 +180,10 @@ func (m MarketData) GetMarketCachedData(symbol string, startTime time.Time, endT
 	return filedBars
 }
 func (m MarketData) CutBarsWithHourFrame(bars []db.Bar, hourFrame float64) []db.Bar {
-	log.Println("CutBarsWithHourFrame")
+	fmt.Println("CutBarsWithHourFrame")
 	var newBars []db.Bar
 	if len(bars) == 0 {
-		log.Println("bARS FOR CUT FRAME NOT FOUND")
+		fmt.Println("bARS FOR CUT FRAME NOT FOUND")
 	}
 	frameTimeStampInHour := int64(float64(60*60) * hourFrame)
 	startTime := time.Unix(bars[0].Timestamp, 0)
@@ -205,7 +206,7 @@ func (m MarketData) CutBarsWithHourFrame(bars []db.Bar, hourFrame float64) []db.
 	return newBars
 }
 func (m MarketData) GetMarketCachedDataWithFrame(hourFrame float64, symbol string, startTime time.Time, endTime time.Time) []db.Bar {
-	log.Println("GetMarketCachedDataWithFrame")
+	fmt.Println("GetMarketCachedDataWithFrame")
 
 	bars := m.GetMarketCachedData(symbol, startTime, endTime)
 	frameBars := m.CutBarsWithHourFrame(bars, hourFrame)

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"neural/algo"
 	"neural/draw"
-	"neural/market"
 	"neural/options"
 
 	"github.com/joho/godotenv"
@@ -17,8 +16,8 @@ func main() {
 		panic(err)
 	}
 
-	marketData := market.NewMarketData()
-	fmt.Println(marketData)
+	// marketData := market.NewMarketData()
+	// fmt.Println(marketData)
 	// hourFrame float64, symbol string, startTime time.Time, endTime time.Time
 
 	// option.MaxGetBarsStartTime

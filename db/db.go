@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -12,7 +13,7 @@ import (
 // var Database *gorm.DB
 
 func GetDb() *gorm.DB {
-	log.Println("Connecting Database...")
+	fmt.Println("Connecting Database...")
 
 	db, err := gorm.Open(sqlite.Open("marketDB.db"), &gorm.Config{
 		// Logger: logger.Default.LogMode(logger.Info),
@@ -24,8 +25,8 @@ func GetDb() *gorm.DB {
 		os.Exit(2)
 	}
 
-	log.Println("Connected Successfully to Database")
-	log.Println("Running Migrations")
+	fmt.Println("Connected Successfully to Database")
+	fmt.Println("Running Migrations")
 
 	db.AutoMigrate(&Order{})
 	db.AutoMigrate(&Bar{})

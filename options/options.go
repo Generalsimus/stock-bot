@@ -2,8 +2,6 @@ package options
 
 import (
 	"time"
-
-	"github.com/piquette/finance-go/datetime"
 )
 
 var (
@@ -20,12 +18,7 @@ var (
 	// შესამოწმებელი დროის ინტერვალები საათობით
 	CheckFrameHours = []float64{2, 4, 8, 16, 24, 48}
 	// CheckSymbols = []string{"ABT", "TM", "TXN", "TXN", "AXP", "TD"}
-	// ფინანსური სანთლების დროის ინტერვალი
-	FinanceInterval = datetime.OneDay
-	// ფინანსური სანთლების დროის ინტერვალი
-	FinanceIntervals = []datetime.Interval{datetime.OneDay}
-	// ფინანსური სანთლების წამოღების საწყისი წერტილი
-	FinanceStartDate = datetime.Datetime{Month: 1, Day: 1, Year: 2020}
 	// მაქსიმალური დროის ინტერვალი საიდანაც სანთლები შეგვიძლია წამოვიღოთ
 	MaxGetBarsStartTime = time.Now().AddDate(-5, 0, 0)
+	// MaxGetBarsStartTime = time.Now().AddDate(0, 0, -2)
 )
