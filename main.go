@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"neural/algo"
 	"neural/draw"
-	"neural/options"
+	"neural/utils"
 
 	"github.com/joho/godotenv"
 )
@@ -21,11 +21,17 @@ func main() {
 	// hourFrame float64, symbol string, startTime time.Time, endTime time.Time
 
 	// option.MaxGetBarsStartTime
+
 	SymbolsSimilarity := algo.GetSymbolsSimilarity()
 	fmt.Println("BEST Len", len(SymbolsSimilarity))
 	fmt.Println("BEST Symbol", SymbolsSimilarity[0].Symbol)
-	drawValue := algo.ConvertToDrawWindow(SymbolsSimilarity[0].Interval, options.ViewCandles)
-	draw.DrawOnNewWindow(drawValue, options.ViewCandles)
+	draw.DrawControllerDashboard(SymbolsSimilarity)
+	position := algo.FindAlpacaRelativeOpenPosition(SymbolsSimilarity[0].Interval)
+	utils.LogStruct(position)
+	// draw.DrawControllerDashboard()
+	// drawValue := algo.ConvertToDrawWindow(SymbolsSimilarity[0].Interval, options.ViewCandles)
+	// draw.DrawOnNewWindow(drawValue, options.ViewCandles)
+
 	// for index, _ := range bars {
 	// 	if index == 0 {
 	// 		continue

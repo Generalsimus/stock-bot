@@ -2,6 +2,7 @@ package algo
 
 import (
 	"fmt"
+	"neural/db"
 	"neural/market"
 	"neural/options"
 	"sort"
@@ -10,6 +11,7 @@ import (
 
 type SymbolBestTimeIntervalsBars struct {
 	Symbol    string
+	LastBar   db.Bar
 	HourFrame float64
 	Interval  TimeIntervalsBars
 }
@@ -26,27 +28,30 @@ func GetSymbolsSimilarity() []*SymbolBestTimeIntervalsBars {
 
 	/////////
 	for _, symbol := range options.CheckSymbols {
+		symbolBars := marketData.GetMarketCachedData(symbol, startTime, endTime)
+		lastBar := symbolBars[len(symbolBars)-1]
 		for _, hourFrame := range options.CheckFrameHours {
-			bars := marketData.GetMarketCachedDataWithFrame(hourFrame, symbol, startTime, endTime)
-			for index, _ := range bars {
+			frameBars := marketData.CutBarsWithHourFrame(symbolBars, hourFrame)
+			for index := range frameBars {
 				if index == 0 {
 					continue
 				}
-				bar1 := bars[index-1]
-				bar2 := bars[index]
+				bar1 := frameBars[index-1]
+				bar2 := frameBars[index]
 				fmt.Println("CUT BARS DIFF: \n", bar2.Timestamp-bar1.Timestamp)
 			}
-			fmt.Println("BARS LEN: ", len(bars))
+			fmt.Println("BARS LEN: ", len(frameBars))
 			intervals := CalcManyIntervals(
 				options.BestCandles,
 				options.StartIntervalCount,
 				options.EndIntervalCount,
 				options.ViewCandles,
-				bars,
+				frameBars,
 			)
 			for _, interval := range intervals {
 				symbolBestTimeIntervals = append(symbolBestTimeIntervals, &SymbolBestTimeIntervalsBars{
 					Symbol:    symbol,
+					LastBar:   lastBar,
 					HourFrame: hourFrame,
 					Interval:  interval,
 				})

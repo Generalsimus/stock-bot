@@ -3,10 +3,15 @@ package draw
 import (
 	"fmt"
 	"image/color"
+	"neural/algo"
+	"neural/options"
 	"neural/utils"
 
 	"fyne.io/fyne/v2"
 	fyneApp "fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"gioui.org/app"
 	"gioui.org/f32"
@@ -16,21 +21,6 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 )
-
-//"fyne.io/fyne/v2/theme"
-
-// type FrameCallback = func(e system.FrameEvent, ops *op.Ops, w *app.Window)
-
-// var callBack FrameCallback = func(e system.FrameEvent, ops *op.Ops, w *app.Window) {
-
-// }
-
-// var WidthDp float32 = 500
-// var HeightDp float32 = 500
-
-// var Width float32 = 1500
-// var Height float32 = 700
-// var drawXY []float64 = []float64{}
 
 func DrawOnNewWindow[T int | uint | float64 | float32](draws [][]T, markLine int) {
 	const (
@@ -43,8 +33,8 @@ func DrawOnNewWindow[T int | uint | float64 | float32](draws [][]T, markLine int
 	red := color.NRGBA{R: 0x80, A: 0xFF}
 	for e := range window.Events() {
 		switch e := e.(type) {
-		case system.DestroyEvent:
-			panic(e.Err)
+		// case system.DestroyEvent:
+		// 	panic(e.Err)
 		case system.FrameEvent:
 			// gtx := layout.NewContext(ops, e)
 			ops.Reset()
@@ -94,16 +84,107 @@ func DrawOnNewWindow[T int | uint | float64 | float32](draws [][]T, markLine int
 
 }
 
-func FyneDashBoard() {
-	var Width float32 = 500
-	var Height float32 = 500
+func ShowMarketMoveData(item *algo.SymbolBestTimeIntervalsBars) {
+
+	drawValue := algo.ConvertToDrawWindow(item.Interval, options.ViewCandles)
+	DrawOnNewWindow(drawValue, options.ViewCandles)
+}
+func FineOpenOrder(item *algo.SymbolBestTimeIntervalsBars, window fyne.Window) {
+	symbolObject, priceObject, hourFrameObject, sideObject, stopLostObject, takeProfitObject := GetItemLabels(item)
+	dialog.ShowCustomConfirm(
+		"Open Order?",
+		"Yes",
+		"No",
+		container.NewGridWithRows(
+			1,
+			container.NewGridWithRows(
+				3,
+				symbolObject,
+				hourFrameObject,
+				priceObject,
+			),
+			container.NewGridWithRows(
+				3,
+				sideObject,
+				stopLostObject,
+				takeProfitObject,
+			),
+		),
+		func(val bool) {
+			fmt.Println("ORDER OPENED", val)
+		},
+		window,
+	)
+
+}
+func GetItemLabels(item *algo.SymbolBestTimeIntervalsBars) (fyne.CanvasObject, fyne.CanvasObject, fyne.CanvasObject, fyne.CanvasObject, fyne.CanvasObject, fyne.CanvasObject) {
+	symbolObject := widget.NewLabel(fmt.Sprintf("Symbol: %v", item.Symbol))
+	priceObject := widget.NewLabel(fmt.Sprintf("Price: %v", item.LastBar.Close))
+	hourFrameObject := widget.NewLabel(fmt.Sprintf("Hour Frame: %v", item.HourFrame))
+	position := algo.FindAlpacaRelativeOpenPosition(item.Interval)
+	sideObject := widget.NewLabel(fmt.Sprintf("Side: %v", position.Side))
+	stopLostObject := widget.NewLabel(fmt.Sprintf("Stop Lost: %v", position.StopLost))
+	takeProfitObject := widget.NewLabel(fmt.Sprintf("Take Profit: %v", position.TakeProfit))
+
+	// Side       alpaca.Side
+	// StopLost   float64
+	// TakeProfit float64
+	return symbolObject, priceObject, hourFrameObject, sideObject, stopLostObject, takeProfitObject
+}
+
+//	func GetSymbolObject(text string) fyne.CanvasObject {
+//		textCanvas := widget.NewLabel(text)
+//		return textCanvas
+//	}
+//
+//	func GetPriceObject(currentPrice float64) fyne.CanvasObject {
+//		textCanvas := widget.NewLabel(fmt.Sprintf("%v", currentPrice))
+//		return textCanvas
+//	}
+func CreateSymbolBox(item *algo.SymbolBestTimeIntervalsBars, window fyne.Window) *fyne.Container {
+	symbolObject, priceObject, hourFrameObject, sideObject, stopLostObject, takeProfitObject := GetItemLabels(item)
+	//  := GetPriceObject(item.LastBar.Close)
+	// space :=
+	onOpenOrder := widget.NewButton("Open Order", func() {
+		FineOpenOrder(item, window)
+	})
+	onOpenMarketVisual := widget.NewButton("Show Market", func() {
+		go func() {
+			ShowMarketMoveData(item)
+		}()
+	})
+	containerBox := container.NewGridWithRows(
+		1,
+		container.NewGridWithRows(
+			3,
+			symbolObject,
+			hourFrameObject,
+			priceObject,
+		),
+		container.NewGridWithRows(
+			3,
+			sideObject,
+			stopLostObject,
+			takeProfitObject,
+		),
+		layout.NewSpacer(),
+		container.NewGridWithRows(
+			2,
+			onOpenOrder,
+			onOpenMarketVisual,
+		),
+	)
+	return containerBox
+}
+func DrawControllerDashboard(items []*algo.SymbolBestTimeIntervalsBars) {
+
+	var Width float32 = 700
+	var Height float32 = 900
 	myApp := fyneApp.New()
 	window := myApp.NewWindow("TabContainer Widget")
 	window.Resize(fyne.NewSize(Width, Height))
 
-	input := widget.NewEntry()
-	input.SetPlaceHolder("Enter text...")
-
+	var drawItems []fyne.CanvasObject
 	// button := widget.NewButton("Save", func() {
 
 	// })
@@ -111,47 +192,17 @@ func FyneDashBoard() {
 	// for _, symbol := range finance.DefaultSymbols {
 	// 	tabs.Append(container.NewTabItem(symbol, widget.NewLabel("Hello")))
 	// }
-
+	for _, item := range items {
+		drawItems = append(drawItems, CreateSymbolBox(item, window), widget.NewSeparator())
+	}
 	// tabs.SetTabLocation(container.TabLocationLeading)
 
-	// content := container.NewVBox(
-	// 	container.NewGridWithColumns(
-	// 		4,
-	// 		widget.NewSelect(finance.DefaultSymbols, func(symbol string) {
-	// 			log.Println("AAAA:", symbol)
-	// 		}),
-	// 		layout.NewSpacer(),
-	// 		layout.NewSpacer(),
-	// 		container.NewGridWithRows(
-	// 			1,
-	// 			input,
-	// 			button,
-	// 		),
-	// 	),
-	// 	container.NewHBox(tabs),
-	// )
-
-	// window.SetContent(content)
+	content := container.NewVScroll(
+		container.NewVBox(
+			drawItems...,
+		),
+	)
+	// content.MinSize
+	window.SetContent(content)
 	window.ShowAndRun()
 }
-
-// func AddListener(newCallBack FrameCallback) {
-// 	callbackCache := callBack
-// 	callBack = func(e system.FrameEvent, ops *op.Ops, w *app.Window) {
-// 		newCallBack(e, ops, w)
-// 		callbackCache(e, ops, w)
-// 	}
-// 	Ops.Reset()
-// }
-
-// func CalcDrawer(cords []float64) {
-// 	min, max := utils.FindMinAndMax(cords)
-// 	// ops := &Ops
-// 	// ops.Reset()
-// 	// defer clip.Rect{Max: image.Pt(100, 100)}.Push(ops).Pop()
-// 	// paint.ColorOp{Color: color.NRGBA{R: 0x80, A: 0xFF}}.Add(ops)
-// 	// paint.PaintOp{}.Add(ops)
-// 	// ops := &Ops
-// 	fmt.Println(min + max)
-
-// }
