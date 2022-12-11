@@ -1,4 +1,5 @@
 .env
 .env.example
-./tmp
-./market/curl-market.go
+tmp
+.idea
+marketDB.db
