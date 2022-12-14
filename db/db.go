@@ -28,7 +28,7 @@ func GetDb() *gorm.DB {
 	fmt.Println("Connected Successfully to Database")
 	fmt.Println("Running Migrations")
 
-	db.AutoMigrate(&Order{})
+	db.AutoMigrate(&AlpacaOrder{})
 	db.AutoMigrate(&Bar{})
 	return db
 }

@@ -161,11 +161,18 @@ func (m MarketData) FillMarketBars(symbol string, startTime time.Time, endTime t
 		endTime,
 	)
 }
+
+var cacheBarsMap = map[string][]db.Bar{}
+
 func (m MarketData) GetMarketCachedData(symbol string, startTime time.Time, endTime time.Time) []db.Bar {
+	key := fmt.Sprintf("%v:%v:%v", symbol, startTime, endTime)
+	if val, ok := cacheBarsMap[key]; ok {
+		return val
+	}
 	m.FillMarketBars(symbol, startTime, endTime)
 
 	dbBars := m.GetMarketDataFromDb(symbol, startTime)
-
+	cacheBarsMap[key] = dbBars
 	return dbBars
 }
 func (m MarketData) CutBarsWithHourFrame(bars []db.Bar, hourFrame float64) []db.Bar {
@@ -185,10 +192,12 @@ func (m MarketData) CutBarsWithHourFrame(bars []db.Bar, hourFrame float64) []db.
 	}
 	return slicedBars
 }
+
 func (m MarketData) GetMarketCachedDataWithFrame(hourFrame float64, symbol string, startTime time.Time, endTime time.Time) []db.Bar {
 	fmt.Println("GetMarketCachedDataWithFrame")
 
 	bars := m.GetMarketCachedData(symbol, startTime, endTime)
 	frameBars := m.CutBarsWithHourFrame(bars, hourFrame)
+
 	return frameBars
 }

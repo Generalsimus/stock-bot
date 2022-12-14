@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image/color"
 	"neural/algo"
+	"neural/market"
 	"neural/options"
 	"neural/utils"
 
@@ -91,6 +92,7 @@ func ShowMarketMoveData(item *algo.SymbolBestTimeIntervalsBars) {
 }
 func FineOpenOrder(item *algo.SymbolBestTimeIntervalsBars, window fyne.Window) {
 	symbolObject, priceObject, hourFrameObject, sideObject, stopLostObject, takeProfitObject := GetItemLabels(item)
+	marketOrder := market.NewMarket()
 	dialog.ShowCustomConfirm(
 		"Open Order?",
 		"Yes",
@@ -111,7 +113,11 @@ func FineOpenOrder(item *algo.SymbolBestTimeIntervalsBars, window fyne.Window) {
 			),
 		),
 		func(val bool) {
-			fmt.Println("ORDER OPENED", val)
+			if val {
+				position := algo.FindAlpacaRelativeOpenPosition(item)
+				marketOrder.OrderMarket(item.Symbol, position)
+				fmt.Println("ORDER OPENED", val)
+			}
 		},
 		window,
 	)
@@ -121,26 +127,14 @@ func GetItemLabels(item *algo.SymbolBestTimeIntervalsBars) (fyne.CanvasObject, f
 	symbolObject := widget.NewLabel(fmt.Sprintf("Symbol: %v", item.Symbol))
 	priceObject := widget.NewLabel(fmt.Sprintf("Price: %v", item.LastBar.Close))
 	hourFrameObject := widget.NewLabel(fmt.Sprintf("Hour Frame: %v", item.HourFrame))
-	position := algo.FindAlpacaRelativeOpenPosition(item.Interval)
+	position := algo.FindAlpacaRelativeOpenPosition(item)
 	sideObject := widget.NewLabel(fmt.Sprintf("Side: %v", position.Side))
-	stopLostObject := widget.NewLabel(fmt.Sprintf("Stop Lost: %v", position.StopLost))
-	takeProfitObject := widget.NewLabel(fmt.Sprintf("Take Profit: %v", position.TakeProfit))
+	stopLostObject := widget.NewLabel(fmt.Sprintf("Stop Lost: %.2f", position.StopLost))
+	takeProfitObject := widget.NewLabel(fmt.Sprintf("Take Profit: %.2f", position.TakeProfit))
 
-	// Side       alpaca.Side
-	// StopLost   float64
-	// TakeProfit float64
 	return symbolObject, priceObject, hourFrameObject, sideObject, stopLostObject, takeProfitObject
 }
 
-//	func GetSymbolObject(text string) fyne.CanvasObject {
-//		textCanvas := widget.NewLabel(text)
-//		return textCanvas
-//	}
-//
-//	func GetPriceObject(currentPrice float64) fyne.CanvasObject {
-//		textCanvas := widget.NewLabel(fmt.Sprintf("%v", currentPrice))
-//		return textCanvas
-//	}
 func CreateSymbolBox(item *algo.SymbolBestTimeIntervalsBars, window fyne.Window) *fyne.Container {
 	symbolObject, priceObject, hourFrameObject, sideObject, stopLostObject, takeProfitObject := GetItemLabels(item)
 	//  := GetPriceObject(item.LastBar.Close)
@@ -185,17 +179,11 @@ func DrawControllerDashboard(items []*algo.SymbolBestTimeIntervalsBars) {
 	window.Resize(fyne.NewSize(Width, Height))
 
 	var drawItems []fyne.CanvasObject
-	// button := widget.NewButton("Save", func() {
-
-	// })
-	// tabs := container.NewAppTabs()
-	// for _, symbol := range finance.DefaultSymbols {
-	// 	tabs.Append(container.NewTabItem(symbol, widget.NewLabel("Hello")))
-	// }
-	for _, item := range items {
+	minCount, _ := utils.FindMinAndMax([]int{100, len(items) - 1})
+	maxDrawableItems := items[0:minCount]
+	for _, item := range maxDrawableItems {
 		drawItems = append(drawItems, CreateSymbolBox(item, window), widget.NewSeparator())
 	}
-	// tabs.SetTabLocation(container.TabLocationLeading)
 
 	content := container.NewVScroll(
 		container.NewVBox(

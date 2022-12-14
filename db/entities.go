@@ -1,13 +1,18 @@
 package db
 
 import (
+	"time"
+
+	"github.com/alpacahq/alpaca-trade-api-go/v2/alpaca"
 	"gorm.io/gorm"
 )
 
-type Order struct {
-	order    string
-	interval uint
-	symbol   string
+type AlpacaOrder struct {
+	Symbol     string
+	Side       alpaca.Side
+	StopLost   float64
+	TakeProfit float64
+	ExpiredAt  time.Time
 	gorm.Model
 }
 type Bar struct {

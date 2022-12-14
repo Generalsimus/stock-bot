@@ -10,15 +10,16 @@ import (
 )
 
 type SymbolBestTimeIntervalsBars struct {
-	Symbol    string
-	LastBar   db.Bar
-	HourFrame float64
-	Interval  TimeIntervalsBars
+	Symbol          string
+	LastBar         db.Bar
+	HourFrame       float64
+	TimeFrameInHour float64
+	Interval        TimeIntervalsBars
 }
 
 func GetSymbolsSimilarity() []*SymbolBestTimeIntervalsBars {
-	symbolBestTimeIntervals := []*SymbolBestTimeIntervalsBars{}
 	marketData := market.NewMarketData()
+	var symbolBestTimeIntervals []*SymbolBestTimeIntervalsBars
 	/////////////////////
 	endTime := time.Now()
 	// dayInTs := int64(60 * 60 * 50)
@@ -27,19 +28,13 @@ func GetSymbolsSimilarity() []*SymbolBestTimeIntervalsBars {
 	fmt.Println("GET BARS: \n", startTime, "\n", endTime)
 
 	/////////
-	for _, symbol := range options.CheckSymbols {
-		symbolBars := marketData.GetMarketCachedData(symbol, startTime, endTime)
-		lastBar := symbolBars[len(symbolBars)-1]
-		for _, hourFrame := range options.CheckFrameHours {
+	for _, hourFrame := range options.CheckFrameHours {
+		symbolFrameBestTimeIntervals := []*SymbolBestTimeIntervalsBars{}
+		for _, symbol := range options.CheckSymbols {
+			symbolBars := marketData.GetMarketCachedData(symbol, startTime, endTime)
 			frameBars := marketData.CutBarsWithHourFrame(symbolBars, hourFrame)
-			for index := range frameBars {
-				if index == 0 {
-					continue
-				}
-				bar1 := frameBars[index-1]
-				bar2 := frameBars[index]
-				fmt.Println("CUT BARS DIFF: \n", bar2.Timestamp-bar1.Timestamp)
-			}
+			lastBar := symbolBars[len(symbolBars)-1]
+			////////////////////////////////////
 			fmt.Println("BARS LEN: ", len(frameBars))
 			intervals := CalcManyIntervals(
 				options.BestCandles,
@@ -49,20 +44,25 @@ func GetSymbolsSimilarity() []*SymbolBestTimeIntervalsBars {
 				frameBars,
 			)
 			for _, interval := range intervals {
-				symbolBestTimeIntervals = append(symbolBestTimeIntervals, &SymbolBestTimeIntervalsBars{
-					Symbol:    symbol,
-					LastBar:   lastBar,
-					HourFrame: hourFrame,
-					Interval:  interval,
+				// interval.interval
+				symbolFrameBestTimeIntervals = append(symbolFrameBestTimeIntervals, &SymbolBestTimeIntervalsBars{
+					Symbol:          symbol,
+					LastBar:         lastBar,
+					HourFrame:       hourFrame,
+					TimeFrameInHour: float64(interval.interval) * hourFrame,
+					Interval:        interval,
 				})
 			}
 		}
+		sortedBestSymbols := SortBestSymbolInterval(symbolFrameBestTimeIntervals)
+		if len(sortedBestSymbols) != 0 {
+			symbolBestTimeIntervals = append(symbolBestTimeIntervals, sortedBestSymbols[0])
+		}
 	}
 
-	sortedBestSymbols := SortBestSymbolInterval(symbolBestTimeIntervals)
 	// fmt.Println("BEST_INTERVAL_SYMBOL: ", sortedBestSymbols[0].Symbol)
 	// sss := sortedBestSymbols[0].bestIntervals[0]
-	return sortedBestSymbols
+	return symbolBestTimeIntervals
 }
 func GetSymbolIntervalSimilarityNum(interval TimeIntervalsBars) float64 {
 	return (SumDistanceSimilarityNum(interval.intervalSimilarity) / float64(len(interval.intervalSimilarity)))

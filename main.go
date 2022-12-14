@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"neural/algo"
 	"neural/draw"
-	"neural/utils"
 
 	"github.com/joho/godotenv"
 )
@@ -24,10 +23,8 @@ func main() {
 
 	SymbolsSimilarity := algo.GetSymbolsSimilarity()
 	fmt.Println("BEST Len", len(SymbolsSimilarity))
-	fmt.Println("BEST Symbol", SymbolsSimilarity[0].Symbol)
 	draw.DrawControllerDashboard(SymbolsSimilarity)
-	position := algo.FindAlpacaRelativeOpenPosition(SymbolsSimilarity[0].Interval)
-	utils.LogStruct(position)
+	// utils.LogStruct(position)
 	// draw.DrawControllerDashboard()
 	// drawValue := algo.ConvertToDrawWindow(SymbolsSimilarity[0].Interval, options.ViewCandles)
 	// draw.DrawOnNewWindow(drawValue, options.ViewCandles)

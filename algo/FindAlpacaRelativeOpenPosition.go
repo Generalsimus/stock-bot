@@ -2,13 +2,16 @@ package algo
 
 import (
 	"math"
-	"neural/market"
+	"neural/db"
 	"neural/utils"
+	"time"
 
 	"github.com/alpacahq/alpaca-trade-api-go/v2/alpaca"
 )
 
-func FindAlpacaRelativeOpenPosition(intervalBars TimeIntervalsBars) market.AlpacaPosition {
+func FindAlpacaRelativeOpenPosition(item *SymbolBestTimeIntervalsBars) db.AlpacaOrder {
+	// intervalBars TimeIntervalsBars
+	intervalBars := item.Interval
 	intervalSimilarity := intervalBars.intervalSimilarity
 	UpAverageMaxDiffSum, DownAverageMaxDiffSum := FindAverageDiffMaxPosition(intervalSimilarity)
 	currentPrice := intervalSimilarity[0].bars[0].Close
@@ -25,10 +28,12 @@ func FindAlpacaRelativeOpenPosition(intervalBars TimeIntervalsBars) market.Alpac
 		stopLost = currentPrice + (currentPrice * (UpAverageMaxDiffSum / 1))
 	}
 
-	position := market.AlpacaPosition{
+	position := db.AlpacaOrder{
+		Symbol:     item.Symbol,
 		Side:       side,
 		TakeProfit: takeProfit,
 		StopLost:   stopLost,
+		ExpiredAt:  time.Now().Add(time.Duration(item.TimeFrameInHour)),
 	}
 	return position
 }

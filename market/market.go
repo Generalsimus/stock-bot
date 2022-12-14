@@ -1,28 +1,31 @@
 package market
 
 import (
-	"log"
+	"fmt"
 	"math"
+	"neural/db"
 	"neural/utils"
 	"time"
 
 	"github.com/alpacahq/alpaca-trade-api-go/v2/alpaca"
 	"github.com/shopspring/decimal"
+	"gorm.io/gorm"
 )
 
-type AlpacaPosition struct {
-	Side       alpaca.Side
-	StopLost   float64
-	TakeProfit float64
-}
+//	type AlpacaPosition struct {
+//		Side       alpaca.Side
+//		StopLost   float64
+//		TakeProfit float64
+//	}
 type Market struct {
 	client     alpaca.Client
 	options    alpaca.ClientOpts
 	account    alpaca.Account
 	marketData MarketData
+	db         *gorm.DB
 }
 
-func (m Market) OrderMarket(symbol string, position AlpacaPosition) {
+func (m Market) OrderMarket(symbol string, position db.AlpacaOrder) {
 	// m.marketData.client.
 	utils.LogStruct("NEW ORDER: ", position)
 
@@ -37,8 +40,7 @@ func (m Market) OrderMarket(symbol string, position AlpacaPosition) {
 		LimitPrice: nil,
 		StopPrice:  &stopLossDecimal,
 	}
-
-	if order, err := m.client.PlaceOrder(alpaca.PlaceOrderRequest{
+	orderOptions := alpaca.PlaceOrderRequest{
 		AccountID:   m.account.ID,
 		AssetKey:    &symbol,
 		Qty:         &qty,
@@ -50,13 +52,16 @@ func (m Market) OrderMarket(symbol string, position AlpacaPosition) {
 		StopLoss:    &StopLoss,
 		// StopPrice:   &stopLossDecimal,
 		// LimitPrice:  &takeProfitDecimal,
-	}); err != nil {
-		log.Fatalf("failed place order: %v", err)
-		log.Fatalf("failed place order: %v", err)
+	}
+	utils.LogStruct("Order Options: ", orderOptions)
+	if order, err := m.client.PlaceOrder(orderOptions); err != nil {
+		fmt.Printf("failed place order: %v\n", err)
 
 		utils.LogStruct("ORDER SUCCESSFUL: ", order)
+	} else {
+
 	}
-	log.Println("order sent")
+
 }
 func (m Market) CheckOrder(symbol string) {
 

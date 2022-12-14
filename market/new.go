@@ -29,15 +29,16 @@ func NewMarket() Market {
 		panic(err)
 	}
 	fmt.Printf("%+v\n", *account)
+	dbConnect := db.GetDb()
 	return Market{
 		client:     client,
 		options:    options,
 		account:    *account,
 		marketData: NewMarketData(),
+		db:         dbConnect,
 	}
 }
 func NewMarketData() MarketData {
-	dbConnect := db.GetDb()
 
 	options := marketdata.ClientOpts{
 		// Alternatively you can set your key and secret using the
@@ -46,7 +47,7 @@ func NewMarketData() MarketData {
 		ApiSecret: os.Getenv("AlpacaApiSecret"),
 	}
 	client := marketdata.NewClient(options)
-
+	dbConnect := db.GetDb()
 	return MarketData{
 		client:  client,
 		options: options,
