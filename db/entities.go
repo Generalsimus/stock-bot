@@ -12,6 +12,7 @@ type AlpacaOrder struct {
 	Side       alpaca.Side
 	StopLost   float64
 	TakeProfit float64
+	HourFrame  float64
 	ExpiredAt  time.Time
 	gorm.Model
 }

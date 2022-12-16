@@ -1,7 +1,6 @@
 package market
 
 import (
-	"fmt"
 	"math"
 	"neural/db"
 	"neural/utils"
@@ -25,12 +24,13 @@ type Market struct {
 	db         *gorm.DB
 }
 
-func (m Market) OrderMarket(symbol string, position db.AlpacaOrder) {
+func (m Market) OrderMarket(position db.AlpacaOrder) (*alpaca.Order, error) {
 	// m.marketData.client.
 	utils.LogStruct("NEW ORDER: ", position)
 
 	//////////////////////////////////
-	qty := decimal.NewFromInt(1)
+	// qty := decimal.NewFromInt(1)
+	qty := decimal.NewFromFloat(0.5)
 	takeProfitDecimal := decimal.NewFromFloat(math.Floor((position.TakeProfit)*100) / 100)
 	stopLossDecimal := decimal.NewFromFloat(math.Floor((position.StopLost)*100) / 100)
 	side := position.Side
@@ -42,7 +42,7 @@ func (m Market) OrderMarket(symbol string, position db.AlpacaOrder) {
 	}
 	orderOptions := alpaca.PlaceOrderRequest{
 		AccountID:   m.account.ID,
-		AssetKey:    &symbol,
+		AssetKey:    &position.Symbol,
 		Qty:         &qty,
 		Side:        side,
 		Type:        alpaca.Market,
@@ -54,28 +54,15 @@ func (m Market) OrderMarket(symbol string, position db.AlpacaOrder) {
 		// LimitPrice:  &takeProfitDecimal,
 	}
 	utils.LogStruct("Order Options: ", orderOptions)
-	if order, err := m.client.PlaceOrder(orderOptions); err != nil {
-		fmt.Printf("failed place order: %v\n", err)
-
-		utils.LogStruct("ORDER SUCCESSFUL: ", order)
-	} else {
-
-	}
+	return m.client.PlaceOrder(orderOptions)
 
 }
-func (m Market) CheckOrder(symbol string) {
+func (m Market) SaveOnDb(alpacaOrderDetails db.AlpacaOrder) {
+	m.db.Create(&alpacaOrderDetails)
+}
+func (m Market) CheckOrderIsExpired(orderPosition db.AlpacaOrder) bool {
+	var dbOrder db.AlpacaOrder
+	res := m.db.Where("symbol = ?", orderPosition.Symbol).Where("side = ?", orderPosition.Side).Where("hour_frame = ?", orderPosition.HourFrame).Where("expired_at <= ?", time.Now()).Find(&dbOrder)
 
-	status := "all"
-	until := time.Now()
-	limit := 1000
-	nested := false
-	orders, _ := m.client.ListOrders(&status, &until, &limit, &nested)
-	////////////////////////////////////////////////////////////////
-	for _, order := range orders {
-		utils.LogStruct("ORDER: ", order)
-	}
-	positions, _ := m.client.ListPositions()
-	for _, pos := range positions {
-		utils.LogStruct("POSITION: ", pos)
-	}
+	return res.RowsAffected == 0
 }

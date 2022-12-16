@@ -33,6 +33,7 @@ func FindAlpacaRelativeOpenPosition(item *SymbolBestTimeIntervalsBars) db.Alpaca
 		Side:       side,
 		TakeProfit: takeProfit,
 		StopLost:   stopLost,
+		HourFrame:  item.HourFrame,
 		ExpiredAt:  time.Now().Add(time.Duration(item.TimeFrameInHour)),
 	}
 	return position

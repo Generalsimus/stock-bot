@@ -114,9 +114,19 @@ func FineOpenOrder(item *algo.SymbolBestTimeIntervalsBars, window fyne.Window) {
 		),
 		func(val bool) {
 			if val {
-				position := algo.FindAlpacaRelativeOpenPosition(item)
-				marketOrder.OrderMarket(item.Symbol, position)
-				fmt.Println("ORDER OPENED", val)
+				orderPosition := algo.FindAlpacaRelativeOpenPosition(item)
+				if marketOrder.CheckOrderIsExpired(orderPosition) {
+					order, err := marketOrder.OrderMarket(orderPosition)
+					if err != nil {
+						fmt.Printf("failed place order: %v\n", err)
+					} else {
+						marketOrder.SaveOnDb(orderPosition)
+						utils.LogStruct("ORDER SUCCESSFUL: ", order)
+					}
+				} else {
+					fmt.Println("ORDER ALREADY EXiST")
+				}
+
 			}
 		},
 		window,
