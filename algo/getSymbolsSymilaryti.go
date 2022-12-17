@@ -35,7 +35,7 @@ func GetSymbolsSimilarity() []*SymbolBestTimeIntervalsBars {
 			frameBars := marketData.CutBarsWithHourFrame(symbolBars, hourFrame)
 			lastBar := symbolBars[len(symbolBars)-1]
 			////////////////////////////////////
-			fmt.Println("BARS LEN: ", len(frameBars))
+			// fmt.Println("BARS LEN: ", len(frameBars))
 			intervals := CalcManyIntervals(
 				options.BestCandles,
 				options.StartIntervalCount,

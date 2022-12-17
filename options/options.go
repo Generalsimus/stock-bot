@@ -14,7 +14,8 @@ var (
 	// ვიზუალიზაცისას დამატებით რამდენი ბარი აჩვენოს ფანჯარაში
 	ViewCandles int = 30
 	// შესამოწმებელი სიმბოლოები
-	CheckSymbols = []string{"GOOGL"}
+	// CheckSymbols = []string{"ZVSA"}
+	CheckSymbols = []string{"LYTS", "SURG", "ERF", "PAYA", "DPSI", "ICVX", "ZVSA", "MOR", "NVAX", "OB", "TDUP", "PRE", "TIG"}
 	// შესამოწმებელი დროის ინტერვალები საათობით
 	CheckFrameHours = []float64{1, 4, 8, 16, 24}
 	// CheckFrameHours = []float64{2, 4, 8, 16, 24, 48}

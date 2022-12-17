@@ -45,7 +45,7 @@ func (m MarketData) GetYahooFinanceData(symbol string, startTime time.Time, endT
 }
 func (m MarketData) GetAlpacaMarketData(symbol string, startTime time.Time, endTime time.Time) []db.Bar {
 	fmt.Println("GetAlpacaMarketData")
-	fmt.Println("REQUEST ALPACA BARS: \n", startTime, "\n", endTime)
+	fmt.Println("REQUEST ALPACA BARS: \n", startTime, "\n", endTime, "\n", symbol)
 	timeNow := time.Now()
 	minute15 := int64(60 * 16)
 	minEnd, _ := utils.FindMinAndMax([]int64{timeNow.Unix() - minute15, endTime.Unix()})
@@ -135,13 +135,14 @@ func (m MarketData) GetMarketDataFromDb(symbol string, startTime time.Time) []db
 	// 	bar2 := bars[index]
 	// 	fmt.Println("DB BARS DIFF: \n", bar2.Timestamp-bar1.Timestamp)
 	// }
-	fmt.Println("DB BARS: ", len(bars))
+	fmt.Println("DB BARS: ", len(bars), symbol)
 	return bars
 }
 func (m MarketData) FindSymbolLasBar(symbol string) (db.Bar, error) {
 	var bar db.Bar
-	res := m.db.Where("symbol = ?", symbol).Where("timestamp = (SELECT MAX(timestamp) FROM bars)").Find(&bar)
-	if res.Error != nil && res.RowsAffected == 0 {
+	res := m.db.Where("symbol = ?", symbol).Where("timestamp = (SELECT MAX(timestamp) FROM bars WHERE symbol = ?) ", symbol).Find(&bar)
+	if res.Error != nil || res.RowsAffected == 0 {
+		fmt.Println("SYMBOL BAR NOT FOUND")
 		return bar, errors.New("SYMBOL BAR NOT FOUND")
 	}
 

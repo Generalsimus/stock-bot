@@ -1,5 +1,4 @@
 .env
-.env.example
 tmp
 .idea
-marketDB.db
+database.db
