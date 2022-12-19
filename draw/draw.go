@@ -189,8 +189,9 @@ func DrawControllerDashboard(items []*algo.SymbolBestTimeIntervalsBars) {
 	window.Resize(fyne.NewSize(Width, Height))
 
 	var drawItems []fyne.CanvasObject
-	minCount, _ := utils.FindMinAndMax([]int{100, len(items) - 1})
-	maxDrawableItems := items[0:minCount]
+	// minCount, _ := utils.FindMinAndMax([]int{100, len(items)})
+	// maxDrawableItems := items[0:minCount]
+	maxDrawableItems := items
 	for _, item := range maxDrawableItems {
 		drawItems = append(drawItems, CreateSymbolBox(item, window), widget.NewSeparator())
 	}

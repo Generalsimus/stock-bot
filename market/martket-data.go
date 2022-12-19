@@ -23,7 +23,7 @@ type MarketData struct {
 }
 
 func (m MarketData) GetYahooFinanceData(symbol string, startTime time.Time, endTime time.Time) []db.Bar {
-	fmt.Println("GetYahooFinanceData")
+	fmt.Println("GetYahooFinanceData", startTime)
 	params := &chart.Params{
 		Symbol:   symbol,
 		Interval: datetime.OneMin,
